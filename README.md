@@ -28,6 +28,14 @@ PWA 오프라인 캐시는 프로덕션 빌드(`npm run build && npm run preview
 
 GitHub Actions에서 `npm test`, `npm run build`, `npm run test:e2e`를 실행합니다.
 
+## SEO · GEO
+
+- 메타/OG/Twitter/canonical: `index.html` + `SeoHead` (`src/seo/siteMeta.ts`)
+- JSON-LD: Organization, WebSite, SoftwareApplication, FAQPage (`src/seo/jsonLd.ts`)
+- 크롤러: `public/robots.txt`, `public/sitemap.xml`
+- 생성형 검색(GEO): `public/llms.txt`, `public/llms-full.txt`
+- 배포 URL 변경 시 `.env`에 `VITE_SITE_URL=https://your-domain` 설정
+
 ## 배포 (Vercel)
 
 1. [vercel.com](https://vercel.com)에서 이 저장소를 Import

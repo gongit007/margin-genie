@@ -8,6 +8,7 @@ import { ProAccountPanel } from './components/ProAccountPanel'
 import { ScenarioComparePanel } from './components/ScenarioComparePanel'
 import { ScenarioPanel } from './components/ScenarioPanel'
 import { SensitivityPanel } from './components/SensitivityPanel'
+import { SeoHead, FAQ_ITEMS } from './components/SeoHead'
 import { ValidationNotes } from './components/ValidationNotes'
 import { downloadChannelCompareCsv } from './export/channelCompareCsv'
 import { downloadMarginCsv } from './export/marginCsv'
@@ -111,6 +112,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen">
+      <SeoHead />
       <header className="sticky top-0 z-30 border-b border-line/80 bg-canvas/90 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4">
           <button type="button" className="text-lg" aria-label="메뉴" onClick={() => setMenu(true)}>
@@ -130,6 +132,7 @@ export default function App() {
         <div className="fixed inset-0 z-40 bg-ink/40" onClick={() => setMenu(false)}>
           <nav
             className="h-full w-72 bg-paper p-6"
+            aria-label="주요 메뉴"
             onClick={(e) => e.stopPropagation()}
           >
             <p className="mb-6 text-sm text-black/50">메뉴</p>
@@ -155,19 +158,20 @@ export default function App() {
       ) : null}
 
       <main id="top">
-        <section className="relative overflow-hidden">
+        <section className="relative overflow-hidden" aria-labelledby="hero-title">
           <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-brand/50 blur-3xl" />
           <div className="mx-auto max-w-6xl px-4 pb-10 pt-16 md:pt-24">
             <p className="mb-4 inline-flex items-center rounded-full border border-line bg-paper px-3 py-1 text-xs">
               계산 엔진과 AI 설명을 분리 · 수수료 출처 표시
             </p>
-            <h1 className="max-w-3xl text-4xl font-semibold leading-tight md:text-6xl">
+            <h1 id="hero-title" className="max-w-3xl text-4xl font-semibold leading-tight md:text-6xl">
               팔기 전에 계산하는
               <br />
-              <span className="mark-yellow">원가/마진 수익성</span> 엔진
+              <span className="mark-yellow">온라인 셀러 마진·실마진</span> 계산기
             </h1>
             <p className="mt-5 max-w-xl text-lg text-black/65">
-              채널 수수료, 광고비, 할인까지. 복잡한 실마진 계산을 엔진이 즉시 끝내고, 화면은 “팔아도 되는지”만 알려줍니다.
+              스마트스토어·쿠팡·11번가·G마켓·옥션·카카오·롯데ON·자사몰 8채널 수수료, 광고비, 할인까지 반영해 공헌이익과
+              손익분기를 즉시 계산합니다. 숫자는 AI가 아닌 Margin Engine이 만듭니다.
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-4">
               <a href="#calculator" className="rounded-full bg-brand px-6 py-3 text-sm font-semibold text-brandink">
@@ -372,27 +376,14 @@ export default function App() {
           </div>
         </section>
 
-        <section id="faq" className="border-t border-line bg-paper py-20">
+        <section id="faq" className="border-t border-line bg-paper py-20" itemScope itemType="https://schema.org/FAQPage">
           <div className="mx-auto max-w-3xl px-4">
             <h2 className="text-3xl font-semibold">자주 묻는 질문</h2>
-            <Faq q="UTON을 그대로 복사한 건가요?">
-              아닙니다. 랜딩의 정보 구조(문제 → 4단계 → 채널 비교 → 계산)를 벤치했고, 수수료 출처·공헌이익 용어·결정론 엔진은 마진지니의 차별점입니다.
-            </Faq>
-            <Faq q="수수료가 공식 확정값인가요?">
-              스마트스토어 판매수수료·Npay는 고객센터 FAQ 기준으로 VERIFIED입니다. 쿠팡·11번가·G마켓·옥션·카카오·롯데ON은 ESTIMATED이며 판매자센터 값으로 덮어쓰세요.
-            </Faq>
-            <Faq q="VAT 모드는 어떻게 쓰나요?">
-              판매가·원가를 공급가(VAT 별도)로 넣을 때는 상세 설정에서 VAT 별도를 선택하세요. 수수료는 기본적으로 채널 정책(VAT 포함/별도)을 따릅니다.
-            </Faq>
-            <Faq q="쿠폰 부담은 어떻게 넣나요?">
-              판매자 전액 부담 쿠폰은 실매출에서 차감됩니다. 플랫폼 부담은 매출 차감 없이 처리하고, 공동 부담은 판매자 분담 비율만큼만 차감합니다.
-            </Faq>
-            <Faq q="Pro는 무엇이 다른가요?">
-              Pro 체험 계정으로 클라우드 업로드·복원, 팀 공유 코드, AI 설명 레이어(엔진 결과 해석)를 사용할 수 있습니다. 계산 자체는 Free와 동일한 엔진입니다.
-            </Faq>
-            <Faq q="AI가 마진을 계산하나요?">
-              하지 않습니다. Margin Engine이 계산하고, 설명 레이어는 그 결과만 읽습니다.
-            </Faq>
+            {FAQ_ITEMS.map((item: (typeof FAQ_ITEMS)[number]) => (
+              <Faq key={item.question} q={item.question}>
+                {item.answer}
+              </Faq>
+            ))}
           </div>
         </section>
       </main>
@@ -401,6 +392,15 @@ export default function App() {
         <p>마진지니 · 세무·투자 자문이 아닙니다. 최종 정산은 각 판매자센터를 확인하세요.</p>
         <p className="mt-1">
           엔진 {ENGINE_VERSION} · 정책 {POLICY_VERSION}
+        </p>
+        <p className="mt-2">
+          <a href="/llms.txt" className="underline underline-offset-2">
+            llms.txt
+          </a>
+          {' · '}
+          <a href="/sitemap.xml" className="underline underline-offset-2">
+            sitemap
+          </a>
         </p>
       </footer>
     </div>
@@ -418,9 +418,20 @@ function Stat({ n, l }: { n: string; l: string }) {
 
 function Faq({ q, children }: { q: string; children: ReactNode }) {
   return (
-    <details className="mt-4 border-b border-line py-4">
-      <summary className="cursor-pointer font-medium">{q}</summary>
-      <p className="mt-2 text-sm text-black/60">{children}</p>
+    <details
+      className="mt-4 border-b border-line py-4"
+      itemScope
+      itemProp="mainEntity"
+      itemType="https://schema.org/Question"
+    >
+      <summary className="cursor-pointer font-medium" itemProp="name">
+        {q}
+      </summary>
+      <div itemScope itemProp="acceptedAnswer" itemType="https://schema.org/Answer">
+        <p className="mt-2 text-sm text-black/60" itemProp="text">
+          {children}
+        </p>
+      </div>
     </details>
   )
 }

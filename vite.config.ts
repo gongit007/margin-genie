@@ -7,11 +7,11 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['icons/icon.svg'],
+      includeAssets: ['icons/icon.svg', 'og-image.svg', 'robots.txt', 'sitemap.xml', 'llms.txt', 'llms-full.txt'],
       manifest: {
         name: '마진지니',
         short_name: '마진지니',
-        description: '온라인 판매 전 공헌이익·실마진·채널 비교 계산기',
+        description: '스마트스토어·쿠팡 등 8채널 실마진·공헌이익·손익분기 계산기. Margin Engine 기반.',
         theme_color: '#111111',
         background_color: '#f7f4ee',
         display: 'standalone',
@@ -33,7 +33,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ['**/*.{js,css,html,ico,svg,webmanifest}'],
+        globPatterns: ['**/*.{js,css,html,ico,svg,webmanifest,txt,xml}'],
         navigateFallback: '/index.html',
         runtimeCaching: [
           {

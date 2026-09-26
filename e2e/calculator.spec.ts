@@ -4,9 +4,19 @@ test.describe('margin-genie calculator', () => {
   test('loads landing and calculator sections', async ({ page }) => {
     await page.goto('/')
     await expect(page).toHaveTitle(/마진지니/)
+    await expect(page.locator('meta[name="description"]')).toHaveAttribute('content', /8채널/)
+    await expect(page.locator('script[type="application/ld+json"]').first()).toBeAttached()
     await expect(page.getByRole('heading', { name: /팔기 전에 계산하는/ })).toBeVisible()
     await page.locator('#calculator').scrollIntoViewIfNeeded()
     await expect(page.getByRole('heading', { name: '빠른 계산' })).toBeVisible()
+  })
+
+  test('exposes GEO llms.txt', async ({ request }) => {
+    const response = await request.get('/llms.txt')
+    expect(response.ok()).toBeTruthy()
+    const body = await response.text()
+    expect(body).toContain('Margin Genie')
+    expect(body).toContain('Supported channels')
   })
 
   test('shows live margin result and channel compare', async ({ page }) => {

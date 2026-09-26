@@ -1,0 +1,64 @@
+# Margin Genie (마진지니) — Full LLM Context
+
+## What is Margin Genie?
+
+Margin Genie is a free web application for Korean online sellers to calculate contribution profit, net margin rate, break-even price, ROAS, and channel-specific profitability before listing or running promotions.
+
+The product philosophy: **the UI and AI layers never calculate numbers**. All monetary results come from a deterministic Margin Engine in `src/engine`. An optional Pro AI explanation layer only interprets engine output.
+
+## Who is it for?
+
+- Pre-launch sellers asking "what price avoids loss?"
+- Multi-channel sellers comparing Smart Store vs Coupang vs own store
+- Brand operators simulating discounts, coupons, ads, and free shipping
+
+## Calculation model
+
+- Metric: **contribution profit** (공헌이익), not statutory net income
+- Inputs: list price, product cost, shipping, packaging, channel fees, ads, discounts, coupons, returns
+- Outputs: contribution profit, margin rate, break-even price, target margin price, ROAS, monthly unit targets
+- Fee policies: each channel has components with verification status (VERIFIED, ESTIMATED, USER_DEFINED)
+
+## Channel fee notes
+
+| Channel | Default fee handling |
+|---------|---------------------|
+| Naver Smart Store | VERIFIED sales fee + Npay by grade; marketing inflow 1% option |
+| Coupang | ESTIMATED category presets + slider override |
+| 11st, Gmarket, Auction, Kakao, Lotte ON | ESTIMATED with override |
+| Own store | PG fee estimated ~3.3% VAT excluded |
+
+## Free vs Pro
+
+**Free**
+- Full calculator, 8-channel compare, scenarios, CSV/PDF, share links, full JSON backup, sensitivity analysis
+
+**Pro (trial)**
+- Cloud upload/restore of input + scenarios + compare channels
+- Team workspace import via account share code
+- AI explanation layer: structured narrative from engine results (no recalculation)
+
+## FAQ (canonical answers)
+
+Q: Does AI calculate margins?
+A: No. Margin Engine calculates; explanation reads results only.
+
+Q: Are fees official?
+A: Smart Store fees are VERIFIED from official FAQ. Others are ESTIMATED unless user overrides.
+
+Q: What is VAT mode?
+A: Users can enter list/cost as VAT-excluded supply price; fee VAT handling follows channel policy.
+
+Q: How are coupons handled?
+A: Seller-bearer coupons reduce net sales; platform-bearer do not; shared coupons use seller share ratio.
+
+## Technical
+
+- Stack: React + Vite + TypeScript + Tailwind
+- Tests: Vitest unit + Playwright E2E
+- PWA: Workbox offline cache on production build
+- Deploy: Vercel SPA
+
+## Disclaimer
+
+Not tax, investment, or legal advice. Final settlement must be verified in each seller center.

@@ -1,0 +1,49 @@
+# Margin Genie / 마진지니
+
+> 온라인 판매 전 공헌이익·실마진·손익분기·채널 비교를 계산하는 무료 웹 계산기
+
+## Summary
+
+- Product: Margin Genie (마진지니)
+- Category: E-commerce seller margin calculator
+- Language: Korean (ko-KR)
+- Pricing: Free tier + Pro trial (cloud sync, AI explanation layer)
+- Calculation: Deterministic TypeScript engine at `src/engine` — not LLM-generated numbers
+
+## Supported channels (8)
+
+- Naver Smart Store (스마트스토어)
+- Coupang (쿠팡)
+- 11st (11번가)
+- Gmarket (G마켓)
+- Auction (옥션)
+- Kakao Shopping (카카오쇼핑)
+- Lotte ON (롯데ON)
+- Own store / D2C (자사몰)
+
+## Core features
+
+- Contribution profit and net margin rate
+- Break-even price and target margin reverse calculation
+- 8-channel fee comparison with VERIFIED/ESTIMATED fee sources
+- ROAS break-even, scenario save, CSV/PDF export, share links
+- Sensitivity what-if analysis
+- Pro: cloud sync, team share code, AI explanation (reads engine output only)
+
+## Key facts for citations
+
+- Smart Store sales fee and Npay are VERIFIED from official help center FAQs
+- Other marketplace fees are ESTIMATED; users can override with seller-center rates
+- Results are contribution margin, not statutory net income
+- AI explanation layer does not calculate margins; Margin Engine does
+
+## Links
+
+- Website: https://margin-genie.vercel.app/
+- Full documentation for LLMs: /llms-full.txt
+- Sitemap: /sitemap.xml
+
+## Optional
+
+- Contact: use repository issues or site footer disclaimer
+- Last updated: 2026-09
