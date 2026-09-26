@@ -13,6 +13,7 @@ import {
   calculateMargin,
   channelLabel,
   compareChannels,
+  COUPANG_CATEGORY_PRESETS,
   emptyInput,
   ENGINE_VERSION,
   interpret,
@@ -26,10 +27,11 @@ import {
   type ChannelCode,
   type MarginInput,
   type MarginResult,
+  type PromoBearer,
   type ShippingPayer,
   type VatMode,
 } from './engine'
-import { copyShareUrl, readShareInputFromHash } from './share/inputShare'
+import { copyShareUrl, readShareFromHash } from './share/inputShare'
 import { defaultCompareChannels, loadCompareChannels, saveCompareChannels } from './storage/compareChannelStorage'
 import { downloadFullBackup, importFullBackupJson } from './storage/fullBackup'
 import { loadMarginInput, saveMarginInput } from './storage/marginInputStorage'
@@ -47,27 +49,39 @@ const DEMO: MarginInput = {
   advertisingRate: 0.06,
 }
 
-function loadInitialInput(): MarginInput {
+function loadInitialState(): { input: MarginInput; compareChannels: ChannelCode[] } {
   if (typeof window !== 'undefined') {
-    const fromHash = readShareInputFromHash(window.location.hash)
-    if (fromHash) return fromHash
+    const fromHash = readShareFromHash(window.location.hash)
+    if (fromHash) {
+      return {
+        input: fromHash.input,
+        compareChannels: fromHash.compareChannels ?? loadCompareChannels(ALL_COMPARE_CHANNELS),
+      }
+    }
   }
-  return loadMarginInput(DEMO)
+  return {
+    input: loadMarginInput(DEMO),
+    compareChannels: loadCompareChannels(ALL_COMPARE_CHANNELS),
+  }
+}
+
+function matchingCoupangPresetId(rate: number): string {
+  const match = COUPANG_CATEGORY_PRESETS.find((preset) => Math.abs(preset.rate - rate) < 0.0001)
+  return match?.id ?? 'custom'
 }
 
 export default function App() {
+  const initial = loadInitialState()
   const [menu, setMenu] = useState(false)
-  const [input, setInput] = useState<MarginInput>(loadInitialInput)
+  const [input, setInput] = useState<MarginInput>(initial.input)
   const [shareMessage, setShareMessage] = useState('')
-  const [selectedCompareChannels, setSelectedCompareChannels] = useState<ChannelCode[]>(() =>
-    loadCompareChannels(ALL_COMPARE_CHANNELS),
-  )
+  const [selectedCompareChannels, setSelectedCompareChannels] = useState<ChannelCode[]>(initial.compareChannels)
   const [backupMessage, setBackupMessage] = useState('')
   const patch = (partial: Partial<MarginInput>) => setInput((prev) => ({ ...prev, ...partial }))
 
   const handleShare = async () => {
-    const ok = await copyShareUrl(input)
-    setShareMessage(ok ? '계산 링크가 클립보드에 복사됐습니다.' : '링크 복사에 실패했습니다.')
+    const ok = await copyShareUrl(input, selectedCompareChannels)
+    setShareMessage(ok ? '계산·비교 채널 링크가 클립보드에 복사됐습니다.' : '링크 복사에 실패했습니다.')
   }
 
   useEffect(() => {
@@ -354,6 +368,9 @@ export default function App() {
             <Faq q="VAT 모드는 어떻게 쓰나요?">
               판매가·원가를 공급가(VAT 별도)로 넣을 때는 상세 설정에서 VAT 별도를 선택하세요. 수수료는 기본적으로 채널 정책(VAT 포함/별도)을 따릅니다.
             </Faq>
+            <Faq q="쿠폰 부담은 어떻게 넣나요?">
+              판매자 전액 부담 쿠폰은 실매출에서 차감됩니다. 플랫폼 부담은 매출 차감 없이 처리하고, 공동 부담은 판매자 분담 비율만큼만 차감합니다.
+            </Faq>
             <Faq q="AI가 마진을 계산하나요?">
               하지 않습니다. Margin Engine이 계산하고, 설명 레이어는 그 결과만 읽습니다.
             </Faq>
@@ -589,29 +606,64 @@ function Calculator({
                   </>
                 ) : null}
                 {input.channel === 'NAVER_SMARTSTORE' ? (
-                  <label className="block sm:col-span-2">
-                    <span className="text-sm font-medium">Npay 등급</span>
-                    <select
-                      className="mt-1 w-full rounded-xl border border-line px-3 py-2.5"
-                      value={input.npayGrade}
-                      onChange={(e) => patch({ npayGrade: e.target.value as MarginInput['npayGrade'] })}
-                    >
-                      <option value="MICRO">영세 1.947%</option>
-                      <option value="SME1">중소1 2.563%</option>
-                      <option value="SME2">중소2 2.728%</option>
-                      <option value="SME3">중소3 3.003%</option>
-                      <option value="GENERAL">일반 3.630%</option>
-                    </select>
-                  </label>
+                  <>
+                    <label className="block sm:col-span-2">
+                      <span className="text-sm font-medium">판매수수료 유입 경로</span>
+                      <select
+                        className="mt-1 w-full rounded-xl border border-line px-3 py-2.5"
+                        value={input.smartstoreInflow}
+                        onChange={(e) =>
+                          patch({ smartstoreInflow: e.target.value as MarginInput['smartstoreInflow'] })
+                        }
+                      >
+                        <option value="DEFAULT">일반 유입 3% (VAT 포함)</option>
+                        <option value="MARKETING">판매자 마케팅 유입 1% (VAT 포함)</option>
+                      </select>
+                    </label>
+                    <label className="block sm:col-span-2">
+                      <span className="text-sm font-medium">Npay 등급</span>
+                      <select
+                        className="mt-1 w-full rounded-xl border border-line px-3 py-2.5"
+                        value={input.npayGrade}
+                        onChange={(e) => patch({ npayGrade: e.target.value as MarginInput['npayGrade'] })}
+                      >
+                        <option value="MICRO">영세 1.947%</option>
+                        <option value="SME1">중소1 2.563%</option>
+                        <option value="SME2">중소2 2.728%</option>
+                        <option value="SME3">중소3 3.003%</option>
+                        <option value="GENERAL">일반 3.630%</option>
+                      </select>
+                    </label>
+                  </>
                 ) : null}
                 {input.channel === 'COUPANG' ? (
-                  <FeeRateSlider
-                    label="쿠팡 수수료 추정"
-                    value={input.coupangCategoryRate}
-                    min={4}
-                    max={10.8}
-                    onChange={(coupangCategoryRate) => patch({ coupangCategoryRate })}
-                  />
+                  <>
+                    <label className="block sm:col-span-2">
+                      <span className="text-sm font-medium">쿠팡 카테고리 프리셋</span>
+                      <select
+                        className="mt-1 w-full rounded-xl border border-line px-3 py-2.5"
+                        value={matchingCoupangPresetId(input.coupangCategoryRate)}
+                        onChange={(e) => {
+                          const preset = COUPANG_CATEGORY_PRESETS.find((item) => item.id === e.target.value)
+                          if (preset) patch({ coupangCategoryRate: preset.rate })
+                        }}
+                      >
+                        {COUPANG_CATEGORY_PRESETS.map((preset) => (
+                          <option key={preset.id} value={preset.id}>
+                            {preset.label}
+                          </option>
+                        ))}
+                        <option value="custom">직접 조정 (슬라이더)</option>
+                      </select>
+                    </label>
+                    <FeeRateSlider
+                      label="쿠팡 수수료 추정"
+                      value={input.coupangCategoryRate}
+                      min={4}
+                      max={10.8}
+                      onChange={(coupangCategoryRate) => patch({ coupangCategoryRate })}
+                    />
+                  </>
                 ) : null}
                 {input.channel === 'ELEVEN_ST' ? (
                   <FeeRateSlider
@@ -750,7 +802,31 @@ function Calculator({
                   onChange={(targetMonthlyProfit) => patch({ targetMonthlyProfit })}
                 />
                 <MoneyField label="월 판매량" value={input.monthlyUnits} onChange={(monthlyUnits) => patch({ monthlyUnits })} />
-                <MoneyField label="쿠폰 (판매자 부담)" value={input.couponAmount} onChange={(couponAmount) => patch({ couponAmount, couponBearer: 'SELLER' })} />
+                <label className="block sm:col-span-2">
+                  <span className="text-sm font-medium">쿠폰 부담</span>
+                  <select
+                    className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5"
+                    value={input.couponBearer}
+                    onChange={(e) => patch({ couponBearer: e.target.value as PromoBearer })}
+                  >
+                    <option value="SELLER">판매자 전액</option>
+                    <option value="PLATFORM">플랫폼 전액 (매출 차감 없음)</option>
+                    <option value="SHARED">공동 부담</option>
+                  </select>
+                </label>
+                <MoneyField label="쿠폰 금액" value={input.couponAmount} onChange={(couponAmount) => patch({ couponAmount })} />
+                {input.couponBearer === 'SHARED' ? (
+                  <label className="block sm:col-span-2 text-sm">
+                    판매자 부담 {(input.couponSellerShare * 100).toFixed(0)}%
+                    <input
+                      type="range"
+                      min={0}
+                      max={100}
+                      value={input.couponSellerShare * 100}
+                      onChange={(e) => patch({ couponSellerShare: Number(e.target.value) / 100 })}
+                    />
+                  </label>
+                ) : null}
                 <FeeRateSlider
                   label="할인율"
                   value={input.discountRate}

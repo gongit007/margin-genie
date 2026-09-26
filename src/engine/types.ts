@@ -26,6 +26,8 @@ export type ShippingPayer = 'CUSTOMER' | 'SELLER' | 'FREE'
 
 export type PromoBearer = 'SELLER' | 'PLATFORM' | 'SHARED' | 'UNKNOWN'
 
+export type SmartstoreInflow = 'DEFAULT' | 'MARKETING'
+
 export type NpayGrade = 'MICRO' | 'SME1' | 'SME2' | 'SME3' | 'GENERAL'
 
 export interface FeeComponent {
@@ -64,6 +66,7 @@ export interface MarginInput {
   customSalesFeeRate: number | null
   customPaymentFeeRate: number | null
   npayGrade: NpayGrade
+  smartstoreInflow: SmartstoreInflow
   coupangCategoryRate: number
   elevenstRate: number
   gmarketRate: number
@@ -75,6 +78,7 @@ export interface MarginInput {
   discountRate: number
   couponAmount: number
   couponBearer: PromoBearer
+  couponSellerShare: number
   advertisingMode: AdMode
   advertisingPerOrder: number
   advertisingRate: number
@@ -152,6 +156,7 @@ export function emptyInput(): MarginInput {
     customSalesFeeRate: null,
     customPaymentFeeRate: null,
     npayGrade: 'GENERAL',
+    smartstoreInflow: 'DEFAULT',
     coupangCategoryRate: 0.108,
     elevenstRate: 0.11,
     gmarketRate: 0.13,
@@ -163,6 +168,7 @@ export function emptyInput(): MarginInput {
     discountRate: 0,
     couponAmount: 0,
     couponBearer: 'SELLER',
+    couponSellerShare: 0.5,
     advertisingMode: 'PER_ORDER',
     advertisingPerOrder: 0,
     advertisingRate: 0,

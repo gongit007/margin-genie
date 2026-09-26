@@ -18,6 +18,22 @@ const NPAY_VAT_INCLUDED: Record<NpayGrade, number> = {
 }
 
 const SMARTSTORE_SALES_FEE_VAT_INCLUDED = 0.03
+const SMARTSTORE_SALES_FEE_MARKETING_VAT_INCLUDED = 0.01
+
+export type CoupangCategoryPreset = {
+  id: string
+  label: string
+  rate: number
+}
+
+export const COUPANG_CATEGORY_PRESETS: CoupangCategoryPreset[] = [
+  { id: 'default', label: '일반 (기본 10.8%)', rate: 0.108 },
+  { id: 'fashion', label: '패션·잡화 (약 8%)', rate: 0.08 },
+  { id: 'digital', label: '디지털·가전 (약 7.8%)', rate: 0.078 },
+  { id: 'food', label: '식품 (약 10.8%)', rate: 0.108 },
+  { id: 'beauty', label: '뷰티 (약 10.8%)', rate: 0.108 },
+  { id: 'home', label: '생활·주방 (약 10.8%)', rate: 0.108 },
+]
 
 function component(partial: Omit<FeeComponent, 'fixedFee' | 'vatMode'> & Partial<FeeComponent>): FeeComponent {
   return {
@@ -29,15 +45,23 @@ function component(partial: Omit<FeeComponent, 'fixedFee' | 'vatMode'> & Partial
 
 export function resolveFeePolicy(input: MarginInput): ChannelFeePolicy {
   if (input.channel === 'NAVER_SMARTSTORE') {
-    const salesRate = input.customSalesFeeRate ?? SMARTSTORE_SALES_FEE_VAT_INCLUDED
+    const defaultSalesRate =
+      input.smartstoreInflow === 'MARKETING'
+        ? SMARTSTORE_SALES_FEE_MARKETING_VAT_INCLUDED
+        : SMARTSTORE_SALES_FEE_VAT_INCLUDED
+    const salesRate = input.customSalesFeeRate ?? defaultSalesRate
     const paymentRate = input.customPaymentFeeRate ?? NPAY_VAT_INCLUDED[input.npayGrade]
     const salesStatus: VerificationStatus = input.customSalesFeeRate == null ? 'VERIFIED' : 'USER_DEFINED'
     const payStatus: VerificationStatus = input.customPaymentFeeRate == null ? 'VERIFIED' : 'USER_DEFINED'
+    const inflowLabel =
+      input.smartstoreInflow === 'MARKETING'
+        ? '판매자 마케팅 유입 1%(VAT 포함)'
+        : '일반 유입 3%(VAT 포함)'
     return {
       channel: 'NAVER_SMARTSTORE',
       name: '스마트스토어',
       channelType: 'marketplace',
-      category: 'default_inflow',
+      category: input.smartstoreInflow === 'MARKETING' ? 'marketing_inflow' : 'default_inflow',
       lastVerified: '2026-09-08',
       disclaimer: '유입 경로·버티컬 수수료·솔루션 사용료는 주문마다 달라질 수 있습니다. 판매자센터 정산을 확인하세요.',
       components: [
@@ -48,9 +72,12 @@ export function resolveFeePolicy(input: MarginInput): ChannelFeePolicy {
           verificationStatus: salesStatus,
           sourceType: 'official_help',
           sourceUrl: 'https://help.sell.smartstore.naver.com/faq/content.help?faqId=15759',
-          sourceReference: '스마트스토어 고객센터 FAQ 15759 · 2025-06-02 결제건부터 · 일반 유입 3%(VAT 포함)',
+          sourceReference: `스마트스토어 고객센터 FAQ 15759 · 2025-06-02 결제건부터 · ${inflowLabel}`,
           effectiveFrom: '2025-06-02',
-          notes: '판매자 마케팅 유입 시 1%(VAT 포함)로 낮아질 수 있습니다.',
+          notes:
+            input.smartstoreInflow === 'MARKETING'
+              ? '판매자가 유입시킨 주문에 적용되는 마케팅 유입 요율입니다.'
+              : '판매자 마케팅 유입 시 1%(VAT 포함)로 낮아질 수 있습니다.',
         }),
         component({
           code: 'npay',

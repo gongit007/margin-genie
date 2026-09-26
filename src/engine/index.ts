@@ -4,12 +4,14 @@ export type {
   ChannelCode,
   MarginInput,
   MarginResult,
+  PromoBearer,
   RiskLevel,
   ShippingPayer,
+  SmartstoreInflow,
   VatMode,
   VerificationStatus,
 } from './types'
 export { calculateMargin, compareChannels, priceLadder, validateInput } from './marginEngine'
-export { channelLabel, resolveFeePolicy } from './feeEngine'
+export { channelLabel, COUPANG_CATEGORY_PRESETS, resolveFeePolicy, type CoupangCategoryPreset } from './feeEngine'
 export { interpret, interpretChannels, riskLabel } from './interpret'
 export { krw, pct, won } from './money'

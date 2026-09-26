@@ -1,4 +1,4 @@
-import { emptyInput, type ChannelCode, type MarginInput, type VatMode } from '../engine'
+import { emptyInput, type ChannelCode, type MarginInput, type PromoBearer, type SmartstoreInflow, type VatMode } from '../engine'
 
 const STORAGE_KEY = 'margin-genie:input:v1'
 
@@ -15,6 +15,8 @@ const CHANNELS: ChannelCode[] = [
 ]
 
 const VAT_MODES: VatMode[] = ['INCLUDED', 'EXCLUDED', 'IGNORE']
+const SMARTSTORE_INFLOWS: SmartstoreInflow[] = ['DEFAULT', 'MARKETING']
+const COUPON_BEARERS: PromoBearer[] = ['SELLER', 'PLATFORM', 'SHARED', 'UNKNOWN']
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v)
@@ -64,6 +66,15 @@ export function sanitizeMarginInput(parsed: unknown, fallback: MarginInput): Mar
     monthlyFixedCost: asNumber(parsed.monthlyFixedCost, base.monthlyFixedCost),
     targetMonthlyProfit: asNumber(parsed.targetMonthlyProfit, base.targetMonthlyProfit),
     targetUnitProfit: asNumber(parsed.targetUnitProfit, base.targetUnitProfit),
+    smartstoreInflow:
+      typeof parsed.smartstoreInflow === 'string' && SMARTSTORE_INFLOWS.includes(parsed.smartstoreInflow as SmartstoreInflow)
+        ? (parsed.smartstoreInflow as SmartstoreInflow)
+        : base.smartstoreInflow,
+    couponBearer:
+      typeof parsed.couponBearer === 'string' && COUPON_BEARERS.includes(parsed.couponBearer as PromoBearer)
+        ? (parsed.couponBearer as PromoBearer)
+        : base.couponBearer,
+    couponSellerShare: asNumber(parsed.couponSellerShare, base.couponSellerShare),
     productName: typeof parsed.productName === 'string' ? parsed.productName.slice(0, 80) : fallback.productName,
     channel: typeof channel === 'string' && CHANNELS.includes(channel as ChannelCode) ? (channel as ChannelCode) : fallback.channel,
     customSalesFeeRate:

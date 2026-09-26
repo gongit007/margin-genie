@@ -94,9 +94,16 @@ function sumVariable(p: VariableParts): number {
   )
 }
 
+function sellerCouponAmount(input: MarginInput): number {
+  if (input.couponAmount <= 0) return 0
+  if (input.couponBearer === 'SELLER') return won(input.couponAmount)
+  if (input.couponBearer === 'SHARED') return won(input.couponAmount * clamp(input.couponSellerShare, 0, 1))
+  return 0
+}
+
 function netFromList(listPrice: number, input: MarginInput): { netSales: number; sellerDiscount: number; sellerCoupon: number } {
   const sellerDiscount = won(listPrice * clamp(input.discountRate, 0, 1))
-  const sellerCoupon = input.couponBearer === 'SELLER' ? won(input.couponAmount) : 0
+  const sellerCoupon = sellerCouponAmount(input)
   const netSales = won(listPrice - sellerDiscount - sellerCoupon)
   return { netSales, sellerDiscount, sellerCoupon }
 }
@@ -115,7 +122,7 @@ function solveListPrice(
 ): number | null {
   const rates = feeRates(resolveFeePolicy(input), input.feeVatMode)
   const d = clamp(input.discountRate, 0, 1)
-  const coupon = input.couponBearer === 'SELLER' ? input.couponAmount : 0
+  const coupon = sellerCouponAmount(input)
   const adRate = input.advertisingMode === 'PERCENT_OF_NET' ? input.advertisingRate : 0
   const feeRate = rates.sales + rates.payment
   const m = kind === 'margin' ? input.targetMarginRate : 0

@@ -1,5 +1,11 @@
-import { emptyInput, type MarginInput } from '../engine'
+import { emptyInput, type ChannelCode, type MarginInput } from '../engine'
+import { defaultCompareChannels } from '../storage/compareChannelStorage'
 import { sanitizeMarginInput } from '../storage/marginInputStorage'
+
+export type SharePayload = {
+  input: MarginInput
+  compareChannels?: ChannelCode[]
+}
 
 function toBase64Url(json: string): string {
   const bytes = new TextEncoder().encode(json)
@@ -15,32 +21,68 @@ function fromBase64Url(encoded: string): string {
   return new TextDecoder().decode(bytes)
 }
 
-export function encodeMarginInput(input: MarginInput): string {
-  return toBase64Url(JSON.stringify(input))
+function isRecord(v: unknown): v is Record<string, unknown> {
+  return typeof v === 'object' && v !== null && !Array.isArray(v)
 }
 
-export function decodeMarginInput(encoded: string): MarginInput | null {
+function isLegacyMarginInput(parsed: Record<string, unknown>): boolean {
+  return typeof parsed.listPrice === 'number' && !('input' in parsed)
+}
+
+function parseCompareChannels(value: unknown): ChannelCode[] | undefined {
+  if (!Array.isArray(value)) return undefined
+  const allowed = defaultCompareChannels()
+  const channels = value.filter((c): c is ChannelCode => typeof c === 'string' && allowed.includes(c as ChannelCode))
+  return channels.length ? channels : undefined
+}
+
+export function encodeSharePayload(payload: SharePayload): string {
+  return toBase64Url(JSON.stringify(payload))
+}
+
+export function decodeSharePayload(encoded: string): SharePayload | null {
   try {
     const parsed: unknown = JSON.parse(fromBase64Url(encoded))
-    return sanitizeMarginInput(parsed, emptyInput())
+    if (!isRecord(parsed)) return null
+    if (isLegacyMarginInput(parsed)) {
+      return { input: sanitizeMarginInput(parsed, emptyInput()) }
+    }
+    if (!('input' in parsed)) return null
+    return {
+      input: sanitizeMarginInput(parsed.input, emptyInput()),
+      compareChannels: parseCompareChannels(parsed.compareChannels),
+    }
   } catch {
     return null
   }
 }
 
-export function readShareInputFromHash(hash: string): MarginInput | null {
+export function encodeMarginInput(input: MarginInput): string {
+  return encodeSharePayload({ input })
+}
+
+export function decodeMarginInput(encoded: string): MarginInput | null {
+  return decodeSharePayload(encoded)?.input ?? null
+}
+
+export function readShareFromHash(hash: string): SharePayload | null {
   const match = hash.match(/^#s=([^&]+)/)
   if (!match) return null
-  return decodeMarginInput(match[1])
+  return decodeSharePayload(match[1])
 }
 
-export function buildShareUrl(input: MarginInput): string {
+export function readShareInputFromHash(hash: string): MarginInput | null {
+  return readShareFromHash(hash)?.input ?? null
+}
+
+export function buildShareUrl(input: MarginInput, compareChannels?: ChannelCode[]): string {
   if (typeof window === 'undefined') return ''
-  return `${window.location.origin}${window.location.pathname}#s=${encodeMarginInput(input)}`
+  const payload: SharePayload = compareChannels?.length ? { input, compareChannels } : { input }
+  return `${window.location.origin}${window.location.pathname}#s=${encodeSharePayload(payload)}`
 }
 
-export async function copyShareUrl(input: MarginInput): Promise<boolean> {
-  const url = buildShareUrl(input)
+export async function copyShareUrl(input: MarginInput, compareChannels?: ChannelCode[]): Promise<boolean> {
+  const url = buildShareUrl(input, compareChannels)
   if (!url) return false
   try {
     await navigator.clipboard.writeText(url)

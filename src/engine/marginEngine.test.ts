@@ -101,6 +101,53 @@ describe('margin engine', () => {
     expect(discounted.contributionProfit).toBeLessThan(plain.contributionProfit)
   })
 
+  it('ignores platform coupon in net sales', () => {
+    const base = {
+      ...emptyInput(),
+      listPrice: 50000,
+      productCost: 10000,
+      couponAmount: 5000,
+      advertisingPerOrder: 0,
+      channel: 'CUSTOM' as const,
+      customSalesFeeRate: 0,
+    }
+    const platform = calculateMargin({ ...base, couponBearer: 'PLATFORM' as const })
+    const plain = calculateMargin({ ...base, couponAmount: 0 })
+    expect(platform.netSales).toBe(plain.netSales)
+    expect(platform.sellerCoupon).toBe(0)
+  })
+
+  it('applies shared coupon by seller share', () => {
+    const base = {
+      ...emptyInput(),
+      listPrice: 50000,
+      productCost: 10000,
+      couponAmount: 6000,
+      couponSellerShare: 0.5,
+      couponBearer: 'SHARED' as const,
+      advertisingPerOrder: 0,
+      channel: 'CUSTOM' as const,
+      customSalesFeeRate: 0,
+    }
+    const shared = calculateMargin(base)
+    expect(shared.netSales).toBe(47000)
+    expect(shared.sellerCoupon).toBe(3000)
+  })
+
+  it('uses smartstore marketing inflow sales fee', () => {
+    const base = {
+      ...emptyInput(),
+      listPrice: 100000,
+      productCost: 30000,
+      discountRate: 0,
+      advertisingPerOrder: 0,
+    }
+    const normal = calculateMargin(base)
+    const marketing = calculateMargin({ ...base, smartstoreInflow: 'MARKETING' as const })
+    expect(marketing.salesFee).toBeLessThan(normal.salesFee)
+    expect(marketing.feePolicy.category).toBe('marketing_inflow')
+  })
+
   it('warns when discount wipes out net sales', () => {
     const result = calculateMargin({
       ...emptyInput(),
