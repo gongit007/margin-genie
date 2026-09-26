@@ -14,7 +14,7 @@ export function ChannelComparePanel({ rows, allChannels, selectedChannels, onTog
   const showToggles = allChannels && selectedChannels && onToggleChannel
 
   return (
-    <div className="mt-8 rounded-3xl border border-line bg-paper p-6">
+    <div className="mt-8 rounded-3xl border border-line bg-paper p-6" data-testid="channel-compare">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h3 className="font-semibold">채널별 비교</h3>

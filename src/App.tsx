@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useState, type HTMLAttributes, type ReactNode } from 'react'
 import { ChannelComparePanel } from './components/ChannelComparePanel'
 import { ChannelInsightPanel } from './components/ChannelInsightPanel'
 import { FeeRateSlider } from './components/FeeRateSlider'
 import { MoneyField } from './components/MoneyField'
 import { ScenarioComparePanel } from './components/ScenarioComparePanel'
 import { ScenarioPanel } from './components/ScenarioPanel'
+import { SensitivityPanel } from './components/SensitivityPanel'
 import { ValidationNotes } from './components/ValidationNotes'
 import { downloadChannelCompareCsv } from './export/channelCompareCsv'
 import { downloadMarginCsv } from './export/marginCsv'
@@ -879,7 +880,7 @@ function Calculator({
                 <span className="rounded-full bg-white/70 px-2.5 py-0.5 text-xs">{risk.text}</span>
               </div>
               <div className="mt-4 grid grid-cols-2 gap-3">
-                <Metric label="공헌이익" value={krw(result.contributionProfit)} />
+                <Metric label="공헌이익" value={krw(result.contributionProfit)} data-testid="margin-result-profit" />
                 <Metric label="실마진율" value={pct(result.marginRate)} />
                 <Metric label="손익분기" value={result.breakEvenPrice ? krw(result.breakEvenPrice) : '—'} />
                 <Metric
@@ -987,6 +988,8 @@ function Calculator({
             </table>
           </div>
         </div>
+
+        <SensitivityPanel input={input} />
 
         <div className="mt-8">
           <ScenarioPanel input={input} onLoad={onLoad} onMutate={() => setScenarioRefreshKey((k) => k + 1)} />
@@ -1112,9 +1115,9 @@ function RoasPanel({ result }: { result: ReturnType<typeof calculateMargin> }) {
   )
 }
 
-function Metric({ label, value }: { label: string; value: string }) {
+function Metric({ label, value, ...rest }: { label: string; value: string } & HTMLAttributes<HTMLDivElement>) {
   return (
-    <div>
+    <div {...rest}>
       <p className="text-xs opacity-70">{label}</p>
       <p className="text-xl font-semibold tabular-nums">{value}</p>
     </div>

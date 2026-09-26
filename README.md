@@ -8,10 +8,17 @@
 ```bash
 npm install
 npm test
+npm run test:e2e
 npm run dev
 ```
 
 개발 서버: http://localhost:5174
+
+PWA 오프라인 캐시는 프로덕션 빌드(`npm run build && npm run preview`)에서 service worker가 등록됩니다.
+
+## CI
+
+GitHub Actions에서 `npm test`, `npm run build`, `npm run test:e2e`를 실행합니다.
 
 ## 배포 (Vercel)
 
