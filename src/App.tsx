@@ -2,7 +2,9 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { FeeRateSlider } from './components/FeeRateSlider'
 import { MoneyField } from './components/MoneyField'
 import { ScenarioPanel } from './components/ScenarioPanel'
+import { downloadChannelCompareCsv } from './export/channelCompareCsv'
 import { downloadMarginCsv } from './export/marginCsv'
+import { printMarginReport } from './export/marginReport'
 import {
   calculateMargin,
   channelLabel,
@@ -16,7 +18,10 @@ import {
   type AdMode,
   type ChannelCode,
   type MarginInput,
+  type MarginResult,
+  type ShippingPayer,
 } from './engine'
+import { copyShareUrl, readShareInputFromHash } from './share/inputShare'
 import { loadMarginInput, saveMarginInput } from './storage/marginInputStorage'
 
 const DEMO: MarginInput = {
@@ -29,10 +34,24 @@ const DEMO: MarginInput = {
   advertisingRate: 0.06,
 }
 
+function loadInitialInput(): MarginInput {
+  if (typeof window !== 'undefined') {
+    const fromHash = readShareInputFromHash(window.location.hash)
+    if (fromHash) return fromHash
+  }
+  return loadMarginInput(DEMO)
+}
+
 export default function App() {
   const [menu, setMenu] = useState(false)
-  const [input, setInput] = useState<MarginInput>(() => loadMarginInput(DEMO))
+  const [input, setInput] = useState<MarginInput>(loadInitialInput)
+  const [shareMessage, setShareMessage] = useState('')
   const patch = (partial: Partial<MarginInput>) => setInput((prev) => ({ ...prev, ...partial }))
+
+  const handleShare = async () => {
+    const ok = await copyShareUrl(input)
+    setShareMessage(ok ? '계산 링크가 클립보드에 복사됐습니다.' : '링크 복사에 실패했습니다.')
+  }
 
   useEffect(() => {
     saveMarginInput(input)
@@ -154,6 +173,13 @@ export default function App() {
                 {best.feePolicy.name}가 현재 입력에서 공헌이익이 가장 높습니다.
                 {rows.some((r) => r.risk === 'LOSS') ? ' 적자 채널은 진입을 보류하세요.' : ''}
               </p>
+              <button
+                type="button"
+                className="mt-3 text-sm font-medium underline"
+                onClick={() => downloadChannelCompareCsv(rows)}
+              >
+                채널 비교 CSV 내보내기
+              </button>
             </div>
           </div>
         </section>
@@ -207,7 +233,15 @@ export default function App() {
           </div>
         </section>
 
-        <Calculator input={input} patch={patch} result={result} onLoad={setInput} />
+        <Calculator
+          input={input}
+          patch={patch}
+          result={result}
+          channelRows={rows}
+          onLoad={setInput}
+          onShare={handleShare}
+          shareMessage={shareMessage}
+        />
 
         <section className="border-t border-line bg-paper py-20">
           <div className="mx-auto max-w-6xl px-4">
@@ -240,7 +274,8 @@ export default function App() {
                 <p className="mt-2 font-serif text-4xl">₩0</p>
                 <ul className="mt-4 space-y-2 text-sm text-black/65">
                   <li>빠른 마진 계산</li>
-                  <li>채널 비교 · 역산 · 시나리오</li>
+                  <li>채널 비교 · 역산 · 시나리오 저장</li>
+                  <li>CSV · PDF/인쇄 · 링크 공유</li>
                   <li>수수료 출처 표시</li>
                 </ul>
                 <a href="#calculator" className="mt-6 inline-block rounded-full bg-brand px-5 py-2 text-sm font-semibold">
@@ -251,9 +286,9 @@ export default function App() {
                 <p className="text-sm text-white/70">Pro · 준비 중</p>
                 <p className="mt-2 font-serif text-4xl">₩9,900</p>
                 <ul className="mt-4 space-y-2 text-sm text-white/70">
-                  <li>상품·시나리오 저장</li>
-                  <li>엑셀 · PDF</li>
+                  <li>클라우드 동기화 · 팀 공유</li>
                   <li>엔진 결과를 해석하는 AI 설명</li>
+                  <li>결제 · 구독 관리</li>
                 </ul>
               </article>
             </div>
@@ -305,12 +340,18 @@ function Calculator({
   input,
   patch,
   result,
+  channelRows,
   onLoad,
+  onShare,
+  shareMessage,
 }: {
   input: MarginInput
   patch: (p: Partial<MarginInput>) => void
   result: ReturnType<typeof calculateMargin>
+  channelRows: MarginResult[]
   onLoad: (input: MarginInput) => void
+  onShare: () => void
+  shareMessage: string
 }) {
   const insight = interpret(result, input)
   const risk = riskLabel(result.risk)
@@ -345,6 +386,18 @@ function Calculator({
               <MoneyField label="판매가" value={input.listPrice} onChange={(listPrice) => patch({ listPrice })} />
               <MoneyField label="상품 원가" value={input.productCost} onChange={(productCost) => patch({ productCost })} />
               <MoneyField label="배송비" value={input.shippingCost} onChange={(shippingCost) => patch({ shippingCost })} />
+              <label className="block">
+                <span className="text-sm font-medium">배송비 부담</span>
+                <select
+                  className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5"
+                  value={input.shippingPayer}
+                  onChange={(e) => patch({ shippingPayer: e.target.value as ShippingPayer })}
+                >
+                  <option value="SELLER">판매자 부담</option>
+                  <option value="CUSTOMER">고객 부담 (별도)</option>
+                  <option value="FREE">무료배송 (판매자)</option>
+                </select>
+              </label>
               <label className="block">
                 <span className="text-sm font-medium">판매 채널</span>
                 <select
@@ -519,16 +572,18 @@ function Calculator({
             </div>
             <RoasPanel result={result} />
             <div className="rounded-3xl border border-line bg-paper p-6">
-              <div className="flex items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="text-sm font-semibold">비용 구조</h3>
-                <button
-                  type="button"
-                  className="rounded-full border border-line px-3 py-1 text-xs font-medium hover:bg-canvas"
-                  onClick={() => downloadMarginCsv(input, result)}
-                >
-                  CSV 내보내기
-                </button>
+                <div className="flex flex-wrap gap-2">
+                  <ExportButton label="CSV" onClick={() => downloadMarginCsv(input, result)} />
+                  <ExportButton
+                    label="PDF/인쇄"
+                    onClick={() => printMarginReport(input, result, insight, channelRows)}
+                  />
+                  <ExportButton label="링크 복사" onClick={onShare} />
+                </div>
               </div>
+              {shareMessage ? <p className="mt-2 text-xs text-black/55">{shareMessage}</p> : null}
               <dl className="mt-3 space-y-1.5 text-sm">
                 <Row k="판매가" v={krw(result.listPrice)} />
                 {result.costLines.map((line) => (
@@ -647,6 +702,18 @@ function Calculator({
         </div>
       </div>
     </section>
+  )
+}
+
+function ExportButton({ label, onClick }: { label: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      className="rounded-full border border-line px-3 py-1 text-xs font-medium hover:bg-canvas"
+      onClick={onClick}
+    >
+      {label}
+    </button>
   )
 }
 
