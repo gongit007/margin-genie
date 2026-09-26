@@ -49,13 +49,13 @@ export function ScenarioPanel({ input, onLoad, onMutate }: ScenarioPanelProps) {
 
   return (
     <div className="rounded-3xl border border-line bg-paper p-6">
-      <h3 className="font-semibold">시나리오 저장</h3>
-      <p className="mt-1 text-xs text-black/50">현재 입력값을 이름 붙여 저장하고 나중에 다시 불러옵니다.</p>
+      <h3 className="panel-title">시나리오 저장</h3>
+      <p className="mt-1 text-help">현재 입력값을 이름 붙여 저장하고 나중에 다시 불러옵니다.</p>
       <div className="mt-4 flex flex-col gap-2 sm:flex-row">
         <input
           type="text"
           placeholder="예: 니트 가디건 · 쿠팡"
-          className="flex-1 rounded-xl border border-line bg-white px-3 py-2.5 text-sm outline-none focus:border-ink"
+          className="input-field flex-1 text-sm"
           value={name}
           onChange={(e) => setName(e.target.value)}
           onKeyDown={(e) => {
@@ -100,14 +100,14 @@ export function ScenarioPanel({ input, onLoad, onMutate }: ScenarioPanelProps) {
           />
         </label>
       </div>
-      {message ? <p className="mt-2 text-xs text-black/55">{message}</p> : null}
+      {message ? <p className="mt-2 text-help">{message}</p> : null}
       {scenarios.length ? (
         <ul className="mt-4 space-y-2">
           {scenarios.map((s) => (
             <li key={s.id} className="flex items-center justify-between gap-3 rounded-xl border border-line px-3 py-2 text-sm">
               <div className="min-w-0">
                 <p className="truncate font-medium">{s.name}</p>
-                <p className="text-xs text-black/45">{new Date(s.savedAt).toLocaleString('ko-KR')}</p>
+                <p className="text-help">{new Date(s.savedAt).toLocaleString('ko-KR')}</p>
               </div>
               <div className="flex shrink-0 gap-2">
                 <button type="button" className="text-xs underline" onClick={() => handleLoad(s)}>
@@ -121,7 +121,7 @@ export function ScenarioPanel({ input, onLoad, onMutate }: ScenarioPanelProps) {
           ))}
         </ul>
       ) : (
-        <p className="mt-4 text-sm text-black/45">저장된 시나리오가 없습니다.</p>
+        <p className="mt-4 text-help">저장된 시나리오가 없습니다.</p>
       )}
     </div>
   )

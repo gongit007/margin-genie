@@ -12,9 +12,9 @@ export function ChannelInsightPanel({ rows, activeChannel }: ChannelInsightPanel
   return (
     <div className="mt-4 rounded-2xl border border-line bg-canvas p-4">
       <p className="text-sm font-semibold">{insight.headline}</p>
-      <p className="mt-1 text-sm text-black/60">{insight.body}</p>
+      <p className="mt-1 text-sm leading-relaxed text-muted">{insight.body}</p>
       {insight.actions.length ? (
-        <ul className="mt-2 space-y-1 text-xs text-black/55">
+        <ul className="mt-2 space-y-1.5 text-sm leading-relaxed text-subtle">
           {insight.actions.map((action) => (
             <li key={action}>· {action}</li>
           ))}

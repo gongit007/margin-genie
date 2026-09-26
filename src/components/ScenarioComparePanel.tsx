@@ -24,8 +24,8 @@ export function ScenarioComparePanel({ refreshKey = 0 }: ScenarioComparePanelPro
   if (scenarios.length < 2) {
     return (
       <div className="mt-6 rounded-3xl border border-dashed border-line bg-paper p-6">
-        <h3 className="font-semibold">시나리오 비교</h3>
-        <p className="mt-2 text-sm text-black/50">저장된 시나리오가 2개 이상이면 나란히 비교할 수 있습니다.</p>
+        <h3 className="panel-title">시나리오 비교</h3>
+        <p className="mt-2 text-help">저장된 시나리오가 2개 이상이면 나란히 비교할 수 있습니다.</p>
       </div>
     )
   }
@@ -42,24 +42,24 @@ export function ScenarioComparePanel({ refreshKey = 0 }: ScenarioComparePanelPro
 
   return (
     <div className="mt-6 rounded-3xl border border-line bg-paper p-6">
-      <h3 className="font-semibold">시나리오 비교</h3>
+      <h3 className="panel-title">시나리오 비교</h3>
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
         <ScenarioSelect label="시나리오 A" value={aId} scenarios={scenarios} onChange={setAId} />
         <ScenarioSelect label="시나리오 B" value={bId} scenarios={scenarios} onChange={setBId} />
       </div>
       {comparison && aId !== bId ? (
-        <table className="mt-4 w-full text-left text-sm">
-          <thead className="text-black/45">
+        <table className="data-table mt-4">
+          <thead>
             <tr>
-              <th className="py-2">항목</th>
+              <th>항목</th>
               <th>{comparison.a.name}</th>
               <th>{comparison.b.name}</th>
             </tr>
           </thead>
           <tbody>
             {rows.map((row) => (
-              <tr key={row.label} className="border-t border-line">
-                <td className="py-2 text-black/60">{row.label}</td>
+              <tr key={row.label}>
+                <td className="text-muted">{row.label}</td>
                 <td className="tabular-nums">{row.a}</td>
                 <td className="tabular-nums">{row.b}</td>
               </tr>
@@ -67,7 +67,7 @@ export function ScenarioComparePanel({ refreshKey = 0 }: ScenarioComparePanelPro
           </tbody>
         </table>
       ) : (
-        <p className="mt-4 text-sm text-black/50">서로 다른 시나리오 2개를 선택하세요.</p>
+        <p className="mt-4 text-help">서로 다른 시나리오 2개를 선택하세요.</p>
       )}
     </div>
   )
@@ -86,12 +86,8 @@ function ScenarioSelect({
 }) {
   return (
     <label className="block text-sm">
-      <span className="font-medium">{label}</span>
-      <select
-        className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-      >
+      <span className="field-label">{label}</span>
+      <select className="input-field mt-1.5" value={value} onChange={(e) => onChange(e.target.value)}>
         {scenarios.map((s) => (
           <option key={s.id} value={s.id}>
             {s.name}

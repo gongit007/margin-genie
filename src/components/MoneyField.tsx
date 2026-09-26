@@ -23,16 +23,16 @@ export function MoneyField({ label, value, onChange }: MoneyFieldProps) {
 
   return (
     <label className="block">
-      <span className="text-sm font-medium">{label}</span>
-      <div className="relative mt-1">
-        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm text-black/40">₩</span>
+      <span className="field-label">{label}</span>
+      <div className="relative mt-1.5">
+        <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-sm font-medium text-subtle">₩</span>
         <input
           type="text"
           inputMode="numeric"
           autoComplete="off"
           placeholder="0"
           aria-label={label}
-          className="w-full rounded-xl border border-line bg-white py-2.5 pl-8 pr-3 text-lg tabular-nums outline-none focus:border-ink"
+          className="input-money"
           value={shown}
           onFocus={() => {
             setFocused(true)

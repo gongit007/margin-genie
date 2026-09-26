@@ -43,15 +43,15 @@ export function ProductComparePanel({ input, compareChannels, onLoadProduct }: P
     <div className="mt-8 rounded-3xl border border-line bg-paper p-6" data-testid="product-compare-panel">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h3 className="font-semibold">다상품 비교</h3>
-          <p className="mt-1 text-xs text-black/50">
+          <h3 className="panel-title">다상품 비교</h3>
+          <p className="mt-1 text-help">
             현재 입력을 상품으로 추가하고, 공헌이익·마크업·월 공헌을 한 테이블에서 비교합니다.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
-            className="rounded-full bg-brand px-3 py-1 text-xs font-semibold"
+            className="rounded-full bg-brand px-3 py-1.5 text-xs font-semibold text-brandink"
             onClick={handleAdd}
           >
             현재 상품 추가
@@ -59,7 +59,7 @@ export function ProductComparePanel({ input, compareChannels, onLoadProduct }: P
           {rows.length ? (
             <button
               type="button"
-              className="rounded-full border border-line px-3 py-1 text-xs font-medium hover:bg-canvas"
+              className="rounded-full border border-line px-3 py-1.5 text-xs font-medium text-ink-2 hover:bg-canvas"
               onClick={() => downloadProductCompareCsv(rows)}
             >
               CSV
@@ -68,7 +68,7 @@ export function ProductComparePanel({ input, compareChannels, onLoadProduct }: P
         </div>
       </div>
 
-      <label className="mt-4 flex items-center gap-2 text-sm">
+      <label className="mt-4 flex items-center gap-2 text-sm text-muted">
         <input
           type="checkbox"
           checked={mode === 'all_channels'}
@@ -77,16 +77,16 @@ export function ProductComparePanel({ input, compareChannels, onLoadProduct }: P
         비교 채널 전체로 펼치기 ({compareChannels.length}개)
       </label>
 
-      {message ? <p className="mt-2 text-xs text-black/55">{message}</p> : null}
+      {message ? <p className="mt-2 text-help">{message}</p> : null}
 
       {!products.length ? (
-        <p className="mt-4 text-sm text-black/45">추가된 상품이 없습니다. 계산 후 「현재 상품 추가」를 눌러 보세요.</p>
+        <p className="mt-4 text-help">추가된 상품이 없습니다. 계산 후 「현재 상품 추가」를 눌러 보세요.</p>
       ) : (
         <div className="mt-4 overflow-x-auto">
-          <table className="w-full min-w-[760px] text-left text-sm">
-            <thead className="text-black/45">
+          <table className="data-table min-w-[760px]">
+            <thead>
               <tr>
-                <th className="py-2">상품</th>
+                <th>상품</th>
                 <th>채널</th>
                 <th>판매가</th>
                 <th>공헌이익</th>
@@ -99,8 +99,8 @@ export function ProductComparePanel({ input, compareChannels, onLoadProduct }: P
             </thead>
             <tbody>
               {rows.map((row) => (
-                <tr key={`${row.productId}-${row.channel}`} className="border-t border-line">
-                  <td className="py-2 font-medium">{row.productName}</td>
+                <tr key={`${row.productId}-${row.channel}`}>
+                  <td className="font-medium">{row.productName}</td>
                   <td>{row.channelLabel}</td>
                   <td className="tabular-nums">{krw(row.listPrice)}</td>
                   <td className="tabular-nums">{krw(row.contributionProfit)}</td>
@@ -111,7 +111,7 @@ export function ProductComparePanel({ input, compareChannels, onLoadProduct }: P
                   <td className="text-right">
                     <button
                       type="button"
-                      className="mr-2 text-xs underline"
+                      className="mr-2 text-xs font-medium text-ink-2 underline underline-offset-2"
                       onClick={() => {
                         const product = products.find((p) => p.id === row.productId)
                         if (product) handleLoad(product)
@@ -120,7 +120,11 @@ export function ProductComparePanel({ input, compareChannels, onLoadProduct }: P
                       불러오기
                     </button>
                     {mode === 'primary' ? (
-                      <button type="button" className="text-xs text-red-700 underline" onClick={() => handleRemove(row.productId)}>
+                      <button
+                        type="button"
+                        className="text-xs font-medium text-red-700 underline underline-offset-2"
+                        onClick={() => handleRemove(row.productId)}
+                      >
                         삭제
                       </button>
                     ) : null}

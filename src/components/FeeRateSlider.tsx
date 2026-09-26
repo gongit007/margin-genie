@@ -9,8 +9,11 @@ type FeeRateSliderProps = {
 
 export function FeeRateSlider({ label, value, min, max, step = 0.1, onChange }: FeeRateSliderProps) {
   return (
-    <label className="block sm:col-span-2 text-sm">
-      {label} {(value * 100).toFixed(1)}%
+    <label className="block sm:col-span-2">
+      <div className="flex items-baseline justify-between gap-3">
+        <span className="field-label">{label}</span>
+        <span className="text-sm font-semibold tabular-nums text-ink">{(value * 100).toFixed(1)}%</span>
+      </div>
       <input
         type="range"
         min={min}

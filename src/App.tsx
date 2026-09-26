@@ -135,7 +135,7 @@ export default function App() {
             aria-label="주요 메뉴"
             onClick={(e) => e.stopPropagation()}
           >
-            <p className="mb-6 text-sm text-black/50">메뉴</p>
+            <p className="mb-6 text-sm text-subtle">메뉴</p>
             {[
               ['#problem', '01 문제'],
               ['#steps', '02 4단계'],
@@ -164,12 +164,12 @@ export default function App() {
             <p className="mb-4 inline-flex items-center rounded-full border border-line bg-paper px-3 py-1 text-xs">
               계산 엔진과 AI 설명을 분리 · 수수료 출처 표시
             </p>
-            <h1 id="hero-title" className="max-w-3xl text-4xl font-semibold leading-tight md:text-6xl">
+            <h1 id="hero-title" className="max-w-3xl text-4xl font-semibold leading-[1.18] tracking-[-0.02em] md:text-5xl md:leading-[1.14] lg:text-6xl">
               팔기 전에 계산하는
               <br />
               <span className="mark-yellow">온라인 셀러 마진·실마진</span> 계산기
             </h1>
-            <p className="mt-5 max-w-xl text-lg text-black/65">
+            <p className="mt-5 max-w-xl section-lead">
               스마트스토어·쿠팡·11번가·G마켓·옥션·카카오·롯데ON·자사몰 8채널 수수료, 광고비, 할인까지 반영해 공헌이익과
               손익분기를 즉시 계산합니다. 숫자는 AI가 아닌 Margin Engine이 만듭니다.
             </p>
@@ -188,20 +188,20 @@ export default function App() {
             </div>
 
             <div className="mt-12 rounded-3xl border border-line bg-paper p-5 shadow-[0_20px_60px_rgba(0,0,0,0.04)] md:p-8">
-              <p className="text-xs font-semibold tracking-[0.16em] text-black/40">CHANNEL MARGIN · LIVE</p>
+              <p className="section-kicker">CHANNEL MARGIN · LIVE</p>
               <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
                 <div>
                   <p className="text-lg font-semibold">{input.productName.trim() || '샘플 상품'}</p>
                   <p className="text-3xl font-semibold tabular-nums">{krw(input.listPrice)}</p>
-                  <p className="text-sm text-black/50">원가 {krw(input.productCost)}</p>
+                  <p className="text-sm text-subtle">원가 {krw(input.productCost)}</p>
                   <a
                     href="#calculator"
-                    className="mt-2 inline-block text-sm text-black/45 underline underline-offset-2 hover:text-ink"
+                    className="mt-2 inline-block text-sm text-faint underline underline-offset-2 hover:text-ink"
                   >
                     계산기에서 판매가·원가 수정 →
                   </a>
                 </div>
-                <p className="text-sm text-black/55">
+                <p className="text-sm text-subtle">
                   아래 채널 마진은 위 숫자와 <strong>같은 계산 엔진</strong>으로 실시간 갱신됩니다.
                 </p>
               </div>
@@ -214,7 +214,7 @@ export default function App() {
                       className={`rounded-2xl border p-4 ${win ? 'border-ink bg-ink text-white' : 'border-line'}`}
                     >
                       <p className="text-sm font-medium">{row.feePolicy.name}</p>
-                      <p className={`mt-1 text-xs ${win ? 'text-white/60' : 'text-black/45'}`}>
+                      <p className={`mt-1 text-xs ${win ? 'text-white/60' : 'text-faint'}`}>
                         수수료 {pct(row.salesFee / Math.max(1, row.netSales))} · 광고 {pct(input.advertisingRate)}
                       </p>
                       <p className="mt-4 font-serif text-3xl">{pct(row.marginRate)}</p>
@@ -223,7 +223,7 @@ export default function App() {
                   )
                 })}
               </div>
-              <p className="mt-4 text-sm text-black/60">
+              <p className="mt-4 text-sm text-muted">
                 {best.feePolicy.name}가 현재 입력에서 공헌이익이 가장 높습니다.
                 {rows.some((r) => r.risk === 'LOSS') ? ' 적자 채널은 진입을 보류하세요.' : ''}
               </p>
@@ -240,8 +240,8 @@ export default function App() {
 
         <section id="problem" className="border-t border-line bg-paper py-20">
           <div className="mx-auto max-w-6xl px-4">
-            <p className="text-xs font-semibold tracking-[0.16em] text-black/40">01 THE PROBLEM</p>
-            <h2 className="mt-3 max-w-3xl text-3xl font-semibold md:text-4xl">
+            <p className="section-kicker">01 THE PROBLEM</p>
+            <h2 className="mt-3 max-w-3xl text-3xl font-semibold leading-snug md:text-4xl">
               매출은 나는데, 남는 게 왜 없는지
               <br />
               모르는 사장님들.
@@ -255,7 +255,7 @@ export default function App() {
               ].map(([t, d]) => (
                 <article key={t} className="rounded-2xl border border-line p-5">
                   <h3 className="font-semibold">{t}</h3>
-                  <p className="mt-2 text-sm text-black/60">{d}</p>
+                  <p className="mt-2 text-sm text-muted">{d}</p>
                 </article>
               ))}
             </div>
@@ -264,8 +264,8 @@ export default function App() {
 
         <section id="steps" className="py-20">
           <div className="mx-auto max-w-6xl px-4">
-            <p className="text-xs font-semibold tracking-[0.16em] text-black/40">02 HOW IT WORKS</p>
-            <h2 className="mt-3 max-w-3xl text-3xl font-semibold md:text-4xl">
+            <p className="section-kicker">02 HOW IT WORKS</p>
+            <h2 className="mt-3 max-w-3xl text-3xl font-semibold leading-snug md:text-4xl">
               감에 의존하던 판매를
               <br />
               데이터 결정으로 바꾸는 4단계
@@ -278,9 +278,9 @@ export default function App() {
                 ['04', '실행 결정', '팔아도 되는지, 어디서 팔지, 얼마에 팔지를 고릅니다.'],
               ].map(([n, t, d]) => (
                 <article key={n} className="rounded-2xl bg-paper p-5">
-                  <p className="font-serif text-2xl text-black/30">{n}</p>
+                  <p className="font-serif text-2xl text-faint">{n}</p>
                   <h3 className="mt-3 font-semibold">{t}</h3>
-                  <p className="mt-2 text-sm text-black/60">{d}</p>
+                  <p className="mt-2 text-sm text-muted">{d}</p>
                 </article>
               ))}
             </div>
@@ -323,7 +323,7 @@ export default function App() {
 
         <section className="border-t border-line bg-paper py-20">
           <div className="mx-auto max-w-6xl px-4">
-            <p className="text-xs font-semibold tracking-[0.16em] text-black/40">03 WHO</p>
+            <p className="section-kicker">03 WHO</p>
             <h2 className="mt-3 text-3xl font-semibold">각자의 질문에 맞춰 씁니다</h2>
             <div className="mt-8 grid gap-4 md:grid-cols-3">
               {[
@@ -332,9 +332,9 @@ export default function App() {
                 ['브랜드 운영', '이번 할인해도 될까요?', '프로모션 시나리오를 한 화면에서 겹쳐 봅니다.'],
               ].map(([t, q, a]) => (
                 <article key={t} className="rounded-2xl border border-line p-5">
-                  <p className="text-xs text-black/40">{t}</p>
+                  <p className="text-xs font-medium text-subtle">{t}</p>
                   <h3 className="mt-2 font-semibold">{q}</h3>
-                  <p className="mt-2 text-sm text-black/60">{a}</p>
+                  <p className="mt-2 text-sm text-muted">{a}</p>
                 </article>
               ))}
             </div>
@@ -343,14 +343,14 @@ export default function App() {
 
         <section id="pricing" className="py-20">
           <div className="mx-auto max-w-6xl px-4">
-            <p className="text-xs font-semibold tracking-[0.16em] text-black/40">04 PRICING</p>
-            <h2 className="mt-3 text-3xl font-semibold">지금은 계산기를 먼저 완벽하게</h2>
-            <p className="mt-2 text-black/55">UTON식 대형 SaaS 구독을 처음부터 받지 않습니다. 엔진 신뢰가 제품입니다.</p>
+            <p className="section-kicker">04 PRICING</p>
+            <h2 className="mt-3 text-3xl font-semibold leading-snug">지금은 계산기를 먼저 완벽하게</h2>
+            <p className="mt-2 text-subtle">UTON식 대형 SaaS 구독을 처음부터 받지 않습니다. 엔진 신뢰가 제품입니다.</p>
             <div className="mt-8 grid gap-4 md:grid-cols-2">
               <article className="rounded-3xl bg-paper p-6">
                 <p className="text-sm">Free</p>
                 <p className="mt-2 font-serif text-4xl">₩0</p>
-                <ul className="mt-4 space-y-2 text-sm text-black/65">
+                <ul className="mt-4 space-y-2 text-sm text-muted">
                   <li>빠른 마진 계산</li>
                   <li>8채널 비교 · 채널 추천 · 역산 · 시나리오</li>
                   <li>CSV · PDF/인쇄 · 링크 공유 · 전체 백업</li>
@@ -388,7 +388,7 @@ export default function App() {
         </section>
       </main>
 
-      <footer className="border-t border-line px-4 py-10 text-center text-xs text-black/45">
+      <footer className="border-t border-line px-4 py-10 text-center text-xs text-faint">
         <p>마진지니 · 세무·투자 자문이 아닙니다. 최종 정산은 각 판매자센터를 확인하세요.</p>
         <p className="mt-1">
           엔진 {ENGINE_VERSION} · 정책 {POLICY_VERSION}
@@ -411,7 +411,7 @@ function Stat({ n, l }: { n: string; l: string }) {
   return (
     <div>
       <p className="font-serif text-4xl">{n}</p>
-      <p className="mt-1 text-sm text-black/50">{l}</p>
+      <p className="mt-1 text-sm text-subtle">{l}</p>
     </div>
   )
 }
@@ -428,7 +428,7 @@ function Faq({ q, children }: { q: string; children: ReactNode }) {
         {q}
       </summary>
       <div itemScope itemProp="acceptedAnswer" itemType="https://schema.org/Answer">
-        <p className="mt-2 text-sm text-black/60" itemProp="text">
+        <p className="mt-2 text-sm text-muted" itemProp="text">
           {children}
         </p>
       </div>
@@ -539,13 +539,13 @@ function Calculator({
   return (
     <section id="calculator" className="border-t border-line bg-canvas py-20">
       <div className="mx-auto max-w-6xl px-4">
-        <p className="text-xs font-semibold tracking-[0.16em] text-black/40">LIVE CALCULATOR</p>
+        <p className="section-kicker">LIVE CALCULATOR</p>
         <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
           <div>
-            <h2 className="text-3xl font-semibold">내 상품, 얼마에 팔아야 남을까?</h2>
-            <p className="mt-2 text-black/55">입력 4개로 시작하고, 상세 설정은 필요할 때만 엽니다.</p>
+            <h2 className="text-3xl font-semibold leading-snug">내 상품, 얼마에 팔아야 남을까?</h2>
+            <p className="mt-2 text-subtle">입력 4개로 시작하고, 상세 설정은 필요할 때만 엽니다.</p>
           </div>
-          <button type="button" className="text-sm text-black/50 underline underline-offset-2 hover:text-ink" onClick={onReset}>
+          <button type="button" className="text-sm text-subtle underline underline-offset-2 hover:text-ink" onClick={onReset}>
             입력 초기화
           </button>
         </div>
@@ -553,12 +553,12 @@ function Calculator({
 
         <div className="mt-10 grid gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.15fr)]">
           <div className="rounded-3xl border border-line bg-paper p-6">
-            <h3 className="font-semibold">빠른 계산</h3>
+            <h3 className="font-semibold leading-snug">빠른 계산</h3>
             <div className="mt-4 grid gap-3">
               <label className="block">
-                <span className="text-sm font-medium">상품명 (선택)</span>
+                <span className="field-label">상품명 (선택)</span>
                 <input
-                  className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5"
+                  className="input-field mt-1.5"
                   value={input.productName}
                   placeholder="예: 니트 가디건"
                   maxLength={80}
@@ -571,7 +571,7 @@ function Calculator({
               <label className="block">
                 <span className="text-sm font-medium">배송비 부담</span>
                 <select
-                  className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5"
+                  className="input-field mt-1.5"
                   value={input.shippingPayer}
                   onChange={(e) => patch({ shippingPayer: e.target.value as ShippingPayer })}
                 >
@@ -583,7 +583,7 @@ function Calculator({
               <label className="block">
                 <span className="text-sm font-medium">판매 채널</span>
                 <select
-                  className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5"
+                  className="input-field mt-1.5"
                   value={input.channel}
                   onChange={(e) => handleChannelChange(e.target.value as ChannelCode)}
                 >
@@ -606,7 +606,7 @@ function Calculator({
                 <label className="block sm:col-span-2">
                   <span className="text-sm font-medium">광고비 입력 방식</span>
                   <select
-                    className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5"
+                    className="input-field mt-1.5"
                     value={input.advertisingMode}
                     onChange={(e) => patch({ advertisingMode: e.target.value as AdMode })}
                   >
@@ -650,7 +650,7 @@ function Calculator({
                     <label className="block sm:col-span-2">
                       <span className="text-sm font-medium">판매수수료 유입 경로</span>
                       <select
-                        className="mt-1 w-full rounded-xl border border-line px-3 py-2.5"
+                        className="input-field mt-1.5"
                         value={input.smartstoreInflow}
                         onChange={(e) =>
                           patch({ smartstoreInflow: e.target.value as MarginInput['smartstoreInflow'] })
@@ -663,7 +663,7 @@ function Calculator({
                     <label className="block sm:col-span-2">
                       <span className="text-sm font-medium">Npay 등급</span>
                       <select
-                        className="mt-1 w-full rounded-xl border border-line px-3 py-2.5"
+                        className="input-field mt-1.5"
                         value={input.npayGrade}
                         onChange={(e) => patch({ npayGrade: e.target.value as MarginInput['npayGrade'] })}
                       >
@@ -681,7 +681,7 @@ function Calculator({
                     <label className="block sm:col-span-2">
                       <span className="text-sm font-medium">쿠팡 카테고리 프리셋</span>
                       <select
-                        className="mt-1 w-full rounded-xl border border-line px-3 py-2.5"
+                        className="input-field mt-1.5"
                         value={matchingCategoryPresetId(COUPANG_CATEGORY_PRESETS, input.coupangCategoryRate)}
                         onChange={(e) => {
                           const preset = COUPANG_CATEGORY_PRESETS.find((item) => item.id === e.target.value)
@@ -710,7 +710,7 @@ function Calculator({
                     <label className="block sm:col-span-2">
                       <span className="text-sm font-medium">11번가 카테고리 프리셋</span>
                       <select
-                        className="mt-1 w-full rounded-xl border border-line px-3 py-2.5"
+                        className="input-field mt-1.5"
                         value={matchingCategoryPresetId(ELEVEN_ST_CATEGORY_PRESETS, input.elevenstRate)}
                         onChange={(e) => {
                           const preset = ELEVEN_ST_CATEGORY_PRESETS.find((item) => item.id === e.target.value)
@@ -739,7 +739,7 @@ function Calculator({
                     <label className="block sm:col-span-2">
                       <span className="text-sm font-medium">G마켓 카테고리 프리셋</span>
                       <select
-                        className="mt-1 w-full rounded-xl border border-line px-3 py-2.5"
+                        className="input-field mt-1.5"
                         value={matchingCategoryPresetId(GMARKET_CATEGORY_PRESETS, input.gmarketRate)}
                         onChange={(e) => {
                           const preset = GMARKET_CATEGORY_PRESETS.find((item) => item.id === e.target.value)
@@ -793,7 +793,7 @@ function Calculator({
                 <label className="block">
                   <span className="text-sm font-medium">판매가·원가 VAT</span>
                   <select
-                    className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5"
+                    className="input-field mt-1.5"
                     value={input.priceVatMode}
                     onChange={(e) => patch({ priceVatMode: e.target.value as VatMode })}
                   >
@@ -805,7 +805,7 @@ function Calculator({
                 <label className="block">
                   <span className="text-sm font-medium">수수료 VAT 해석</span>
                   <select
-                    className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5"
+                    className="input-field mt-1.5"
                     value={input.feeVatMode}
                     onChange={(e) => patch({ feeVatMode: e.target.value as VatMode })}
                   >
@@ -885,7 +885,7 @@ function Calculator({
                 <label className="block sm:col-span-2">
                   <span className="text-sm font-medium">쿠폰 부담</span>
                   <select
-                    className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5"
+                    className="input-field mt-1.5"
                     value={input.couponBearer}
                     onChange={(e) => patch({ couponBearer: e.target.value as PromoBearer })}
                   >
@@ -956,7 +956,7 @@ function Calculator({
             <div className={`rounded-3xl p-6 ${risk.className}`}>
               <div className="flex items-center justify-between">
                 <p className="text-sm font-semibold">이 가격으로 팔아도 될까요?</p>
-                <span className="rounded-full bg-white/70 px-2.5 py-0.5 text-xs">{risk.text}</span>
+                <span className="badge-soft">{risk.text}</span>
               </div>
               <div className="mt-4 grid grid-cols-2 gap-3">
                 <Metric label="공헌이익" value={krw(result.contributionProfit)} data-testid="margin-result-profit" />
@@ -975,9 +975,9 @@ function Calculator({
                 ) : null}
               </div>
               <p className="mt-4 font-medium">{insight.headline}</p>
-              <p className="mt-1 text-sm opacity-90">{insight.body}</p>
+              <p className="mt-1 text-sm leading-relaxed text-ink-2/90">{insight.body}</p>
               {insight.actions.length ? (
-                <ul className="mt-2 space-y-1 text-sm opacity-90">
+                <ul className="mt-2 space-y-1.5 text-sm leading-relaxed text-ink-2/85">
                   {insight.actions.map((action) => (
                     <li key={action}>· {action}</li>
                   ))}
@@ -993,7 +993,7 @@ function Calculator({
             />
             <div className="rounded-3xl border border-line bg-paper p-6">
               <div className="flex flex-wrap items-center justify-between gap-2">
-                <h3 className="text-sm font-semibold">비용 구조</h3>
+                <h3 className="panel-title">비용 구조</h3>
                 <div className="flex flex-wrap gap-2">
                   <ExportButton label="CSV" onClick={() => downloadMarginCsv(input, result)} />
                   <ExportButton
@@ -1003,7 +1003,7 @@ function Calculator({
                   <ExportButton label="링크 복사" onClick={onShare} />
                 </div>
               </div>
-              {shareMessage ? <p className="mt-2 text-xs text-black/55">{shareMessage}</p> : null}
+              {shareMessage ? <p className="mt-2 text-xs text-subtle">{shareMessage}</p> : null}
               <dl className="mt-3 space-y-1.5 text-sm">
                 <Row k="판매가" v={krw(result.listPrice)} />
                 {result.costLines.map((line) => (
@@ -1011,7 +1011,7 @@ function Calculator({
                 ))}
                 <Row k="공헌이익" v={krw(result.contributionProfit)} strong />
               </dl>
-              <div className="mt-4 space-y-2 rounded-xl bg-canvas p-3 text-xs text-black/55">
+              <div className="mt-4 space-y-2 rounded-xl bg-canvas p-3 text-help">
                 {result.feePolicy.components.map((c) => (
                   <p key={c.code}>
                     <strong className="text-ink">{c.label}</strong> {(c.rate * 100).toFixed(3)}% · {c.verificationStatus}
@@ -1042,7 +1042,7 @@ function Calculator({
         <ChannelInsightPanel rows={compareChannels(input, selectedCompareChannels)} activeChannel={input.channel} />
 
         <div className="mt-8 rounded-3xl border border-line bg-paper p-6">
-          <h3 className="font-semibold">가격을 바꿔보세요</h3>
+          <h3 className="panel-title">가격을 바꿔보세요</h3>
           <input
             className="mt-4"
             type="range"
@@ -1053,10 +1053,10 @@ function Calculator({
             onChange={(e) => patch({ listPrice: Number(e.target.value) })}
           />
           <div className="mt-4 overflow-x-auto">
-            <table className="w-full min-w-[480px] text-left text-sm">
-              <thead className="text-black/45">
+            <table className="data-table min-w-[480px]">
+              <thead>
                 <tr>
-                  <th className="py-2">판매가</th>
+                  <th>판매가</th>
                   <th>공헌이익</th>
                   <th>실마진</th>
                   <th>판정</th>
@@ -1065,7 +1065,7 @@ function Calculator({
               <tbody>
                 {ladder.map((row) => (
                   <tr key={row.listPrice} className={row.listPrice === input.listPrice ? 'bg-brand/40' : ''}>
-                    <td className="py-2 tabular-nums">{krw(row.listPrice)}</td>
+                    <td className="tabular-nums">{krw(row.listPrice)}</td>
                     <td className="tabular-nums">{krw(row.contributionProfit)}</td>
                     <td>{pct(row.marginRate)}</td>
                     <td>{riskLabel(row.risk).text}</td>
@@ -1084,7 +1084,7 @@ function Calculator({
           <ProductComparePanel input={input} compareChannels={selectedCompareChannels} onLoadProduct={onLoad} />
           <div className="mt-4 rounded-3xl border border-line bg-paper p-6">
             <h3 className="font-semibold">전체 백업</h3>
-            <p className="mt-1 text-xs text-black/50">현재 입력·시나리오·비교 채널 설정을 한 JSON 파일로 저장합니다.</p>
+            <p className="mt-1 text-xs text-subtle">현재 입력·시나리오·비교 채널 설정을 한 JSON 파일로 저장합니다.</p>
             <div className="mt-3 flex flex-wrap gap-2">
               <button
                 type="button"
@@ -1107,7 +1107,7 @@ function Calculator({
                 />
               </label>
             </div>
-            {backupMessage ? <p className="mt-2 text-xs text-black/55">{backupMessage}</p> : null}
+            {backupMessage ? <p className="mt-2 text-xs text-subtle">{backupMessage}</p> : null}
           </div>
           <ProAccountPanel
             input={input}
@@ -1129,7 +1129,7 @@ function Calculator({
 
         <div className="mt-6 grid gap-6 lg:grid-cols-2">
           <div className="rounded-3xl border border-line bg-paper p-6">
-            <h3 className="font-semibold">프로모션 시뮬</h3>
+            <h3 className="panel-title">프로모션 시뮬</h3>
             <label className="mt-4 block text-sm">
               할인 {(input.discountRate * 100).toFixed(0)}%
               <input
@@ -1154,7 +1154,7 @@ function Calculator({
             </table>
           </div>
           <div className="rounded-3xl border border-line bg-paper p-6">
-            <h3 className="font-semibold">역산</h3>
+            <h3 className="panel-title">역산</h3>
             <div className="mt-4 grid gap-3">
               <Metric label="목표 마진 판매가" value={result.targetMarginPrice ? krw(result.targetMarginPrice) : '불가'} />
               <Metric
@@ -1202,14 +1202,14 @@ function RoasPanel({ result }: { result: ReturnType<typeof calculateMargin> }) {
 
   return (
     <div className="rounded-3xl border border-line bg-paper p-6">
-      <h3 className="text-sm font-semibold">광고 ROAS</h3>
-      <p className="mt-1 text-xs text-black/50">광고비 포함 전 마진 기준 손익분기 ROAS · 현재 입력 기준 추정 ROAS</p>
+      <h3 className="panel-title">광고 ROAS</h3>
+      <p className="mt-1 text-help">광고비 포함 전 마진 기준 손익분기 ROAS · 현재 입력 기준 추정 ROAS</p>
       <div className="mt-4 grid grid-cols-2 gap-3">
         <Metric label="손익분기 ROAS" value={formatRoas(result.breakEvenRoas)} />
         <Metric label="현재 ROAS" value={formatRoas(result.impliedRoas)} />
       </div>
       {result.breakEvenRoas !== null && result.impliedRoas !== null ? (
-        <p className="mt-3 text-xs text-black/55">
+        <p className="mt-3 text-help">
           {result.impliedRoas >= result.breakEvenRoas
             ? `현재 ROAS(${formatRoas(result.impliedRoas)})가 손익분기(${formatRoas(result.breakEvenRoas)}) 이상입니다.`
             : `현재 ROAS(${formatRoas(result.impliedRoas)})가 손익분기(${formatRoas(result.breakEvenRoas)}) 미만입니다.`}
@@ -1222,20 +1222,20 @@ function RoasPanel({ result }: { result: ReturnType<typeof calculateMargin> }) {
 function Metric({ label, value, ...rest }: { label: string; value: string } & HTMLAttributes<HTMLDivElement>) {
   return (
     <div {...rest}>
-      <p className="text-xs opacity-70">{label}</p>
-      <p className="text-xl font-semibold tabular-nums">{value}</p>
+      <p className="metric-label">{label}</p>
+      <p className="metric-value">{value}</p>
     </div>
   )
 }
 
 function Row({ k, v, note, strong }: { k: string; v: string; note?: string; strong?: boolean }) {
   return (
-    <div className={`flex justify-between gap-3 ${strong ? 'font-semibold' : ''}`}>
-      <dt className="text-black/60">
+    <div className={`flex justify-between gap-3 py-0.5 ${strong ? 'font-semibold text-ink' : ''}`}>
+      <dt className={strong ? 'text-ink' : 'text-muted'}>
         {k}
-        {note ? <span className="ml-2 text-[10px] uppercase text-black/35">{note}</span> : null}
+        {note ? <span className="ml-2 text-2xs font-semibold uppercase tracking-wide text-faint">{note}</span> : null}
       </dt>
-      <dd className="tabular-nums">{v}</dd>
+      <dd className="tabular-nums text-ink">{v}</dd>
     </div>
   )
 }
