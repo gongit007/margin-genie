@@ -16,6 +16,14 @@ npm run dev
 
 PWA 오프라인 캐시는 프로덕션 빌드(`npm run build && npm run preview`)에서 service worker가 등록됩니다.
 
+## Pro (체험)
+
+계산기 하단 `#pro` 섹션에서 Pro 체험 계정 로그인 후 사용할 수 있습니다.
+
+- **클라우드 동기화**: 입력·시나리오·비교 채널 업로드/복원
+- **팀 공유**: 계정 ID를 팀 공유 코드로 다른 워크스페이스 불러오기
+- **AI 설명 레이어**: 엔진 결과만 읽어 마진·채널·민감도를 문장으로 정리 (숫자 재계산 없음)
+
 ## CI
 
 GitHub Actions에서 `npm test`, `npm run build`, `npm run test:e2e`를 실행합니다.

@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState, type HTMLAttributes, type ReactNode } from 'react'
 import { ChannelComparePanel } from './components/ChannelComparePanel'
+import { AiExplainPanel } from './components/AiExplainPanel'
 import { ChannelInsightPanel } from './components/ChannelInsightPanel'
 import { FeeRateSlider } from './components/FeeRateSlider'
 import { MoneyField } from './components/MoneyField'
+import { ProAccountPanel } from './components/ProAccountPanel'
 import { ScenarioComparePanel } from './components/ScenarioComparePanel'
 import { ScenarioPanel } from './components/ScenarioPanel'
 import { SensitivityPanel } from './components/SensitivityPanel'
@@ -36,6 +38,7 @@ import { copyShareUrl, readShareFromHash } from './share/inputShare'
 import { defaultCompareChannels, loadCompareChannels, saveCompareChannels } from './storage/compareChannelStorage'
 import { downloadFullBackup, importFullBackupJson } from './storage/fullBackup'
 import { loadMarginInput, saveMarginInput } from './storage/marginInputStorage'
+import { getSession, isProActive, type ProSession } from './pro/accountStorage'
 
 const ALL_COMPARE_CHANNELS = defaultCompareChannels()
 
@@ -78,6 +81,7 @@ export default function App() {
   const [shareMessage, setShareMessage] = useState('')
   const [selectedCompareChannels, setSelectedCompareChannels] = useState<ChannelCode[]>(initial.compareChannels)
   const [backupMessage, setBackupMessage] = useState('')
+  const [proSession, setProSession] = useState<ProSession | null>(() => getSession())
   const patch = (partial: Partial<MarginInput>) => setInput((prev) => ({ ...prev, ...partial }))
 
   const handleShare = async () => {
@@ -117,7 +121,7 @@ export default function App() {
             마진지니
           </a>
           <a href="#calculator" className="rounded-full bg-ink px-4 py-2 text-sm text-white">
-            무료로 시작 →
+            {isProActive(proSession) ? 'Pro 사용 중' : '무료로 시작 →'}
           </a>
         </div>
       </header>
@@ -133,8 +137,9 @@ export default function App() {
               ['#problem', '01 문제'],
               ['#steps', '02 4단계'],
               ['#calculator', '03 계산기'],
-              ['#pricing', '04 요금'],
-              ['#faq', '05 FAQ'],
+              ['#pro', '04 Pro'],
+              ['#pricing', '05 요금'],
+              ['#faq', '06 FAQ'],
             ].map(([href, label]) => (
               <a
                 key={href}
@@ -303,6 +308,13 @@ export default function App() {
               setBackupMessage('백업 파일을 읽지 못했습니다.')
             }
           }}
+          proSession={proSession}
+          onProSessionChange={setProSession}
+          onCloudRestore={({ input: restoredInput, compareChannels, scenarioCount }) => {
+            setInput(restoredInput)
+            setSelectedCompareChannels(compareChannels)
+            setBackupMessage(`클라우드 복원 완료 · 시나리오 ${scenarioCount}개`)
+          }}
         />
 
         <section className="border-t border-line bg-paper py-20">
@@ -345,13 +357,16 @@ export default function App() {
                 </a>
               </article>
               <article className="rounded-3xl border border-ink bg-ink p-6 text-white">
-                <p className="text-sm text-white/70">Pro · 준비 중</p>
+                <p className="text-sm text-white/70">Pro · 체험 가능</p>
                 <p className="mt-2 font-serif text-4xl">₩9,900</p>
                 <ul className="mt-4 space-y-2 text-sm text-white/70">
-                  <li>클라우드 동기화 · 팀 공유</li>
-                  <li>엔진 결과를 해석하는 AI 설명</li>
-                  <li>결제 · 구독 관리</li>
+                  <li>클라우드 동기화 · 팀 공유 코드</li>
+                  <li>엔진 결과 AI 설명 레이어</li>
+                  <li>결제 · 구독 관리 (준비 중)</li>
                 </ul>
+                <a href="#pro" className="mt-6 inline-block rounded-full bg-brand px-5 py-2 text-sm font-semibold text-brandink">
+                  Pro 체험 시작
+                </a>
               </article>
             </div>
           </div>
@@ -371,6 +386,9 @@ export default function App() {
             </Faq>
             <Faq q="쿠폰 부담은 어떻게 넣나요?">
               판매자 전액 부담 쿠폰은 실매출에서 차감됩니다. 플랫폼 부담은 매출 차감 없이 처리하고, 공동 부담은 판매자 분담 비율만큼만 차감합니다.
+            </Faq>
+            <Faq q="Pro는 무엇이 다른가요?">
+              Pro 체험 계정으로 클라우드 업로드·복원, 팀 공유 코드, AI 설명 레이어(엔진 결과 해석)를 사용할 수 있습니다. 계산 자체는 Free와 동일한 엔진입니다.
             </Faq>
             <Faq q="AI가 마진을 계산하나요?">
               하지 않습니다. Margin Engine이 계산하고, 설명 레이어는 그 결과만 읽습니다.
@@ -422,6 +440,9 @@ function Calculator({
   backupMessage,
   onFullBackup,
   onFullImport,
+  proSession,
+  onProSessionChange,
+  onCloudRestore,
 }: {
   input: MarginInput
   patch: (p: Partial<MarginInput>) => void
@@ -437,6 +458,13 @@ function Calculator({
   backupMessage: string
   onFullBackup: () => void
   onFullImport: (file: File) => void | Promise<void>
+  proSession: ProSession | null
+  onProSessionChange: (session: ProSession | null) => void
+  onCloudRestore: (payload: {
+    input: MarginInput
+    compareChannels: ChannelCode[]
+    scenarioCount: number
+  }) => void
 }) {
   const insight = interpret(result, input)
   const risk = riskLabel(result.risk)
@@ -1021,6 +1049,22 @@ function Calculator({
             </div>
             {backupMessage ? <p className="mt-2 text-xs text-black/55">{backupMessage}</p> : null}
           </div>
+          <ProAccountPanel
+            input={input}
+            compareChannels={selectedCompareChannels}
+            onRestore={(payload) => {
+              onCloudRestore(payload)
+              setScenarioRefreshKey((k) => k + 1)
+            }}
+            onSessionChange={onProSessionChange}
+          />
+          <AiExplainPanel
+            session={proSession}
+            input={input}
+            result={result}
+            channelRows={channelRows}
+            activeChannel={input.channel}
+          />
         </div>
 
         <div className="mt-6 grid gap-6 lg:grid-cols-2">

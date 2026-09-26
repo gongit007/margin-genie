@@ -14,6 +14,17 @@ test.describe('margin-genie calculator', () => {
     await expect(page.getByTestId('margin-result-profit')).toBeVisible()
     await expect(page.getByTestId('channel-compare')).toBeVisible()
     await expect(page.getByTestId('sensitivity-panel')).toBeVisible()
+    await expect(page.getByTestId('pro-account-panel')).toBeVisible()
+    await expect(page.getByTestId('ai-explain-panel')).toBeVisible()
+  })
+
+  test('activates pro trial and shows full ai explanation', async ({ page }) => {
+    await page.goto('/#pro')
+    await page.getByPlaceholder('you@shop.com').fill('pro-e2e@shop.com')
+    await page.getByPlaceholder('예: Gong').fill('E2E Tester')
+    await page.getByRole('button', { name: 'Pro 체험 시작' }).click()
+    await expect(page.getByText('Pro 활성')).toBeVisible()
+    await expect(page.getByText('다음 행동')).toBeVisible()
   })
 
   test('recalculates when list price changes', async ({ page }) => {
