@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { FeeRateSlider } from './components/FeeRateSlider'
 import { MoneyField } from './components/MoneyField'
 import {
   calculateMargin,
@@ -117,9 +118,15 @@ export default function App() {
                   <p className="text-lg font-semibold">샘플 니트 가디건</p>
                   <p className="text-3xl font-semibold tabular-nums">{krw(input.listPrice)}</p>
                   <p className="text-sm text-black/50">원가 {krw(input.productCost)}</p>
+                  <a
+                    href="#calculator"
+                    className="mt-2 inline-block text-sm text-black/45 underline underline-offset-2 hover:text-ink"
+                  >
+                    계산기에서 판매가·원가 수정 →
+                  </a>
                 </div>
                 <p className="text-sm text-black/55">
-                  아래 숫자는 목업이 아닙니다. <strong>같은 계산 엔진</strong>이 실시간으로 돌립니다.
+                  아래 채널 마진은 위 숫자와 <strong>같은 계산 엔진</strong>으로 실시간 갱신됩니다.
                 </p>
               </div>
               <div className="mt-6 grid gap-3 md:grid-cols-3">
@@ -376,17 +383,22 @@ function Calculator({
                   </label>
                 ) : null}
                 {input.channel === 'COUPANG' ? (
-                  <label className="block sm:col-span-2 text-sm">
-                    쿠팡 수수료 추정 {(input.coupangCategoryRate * 100).toFixed(1)}%
-                    <input
-                      type="range"
-                      min={4}
-                      max={10.8}
-                      step={0.1}
-                      value={input.coupangCategoryRate * 100}
-                      onChange={(e) => patch({ coupangCategoryRate: Number(e.target.value) / 100 })}
-                    />
-                  </label>
+                  <FeeRateSlider
+                    label="쿠팡 수수료 추정"
+                    value={input.coupangCategoryRate}
+                    min={4}
+                    max={10.8}
+                    onChange={(coupangCategoryRate) => patch({ coupangCategoryRate })}
+                  />
+                ) : null}
+                {input.channel === 'ELEVEN_ST' ? (
+                  <FeeRateSlider
+                    label="11번가 수수료 추정"
+                    value={input.elevenstRate}
+                    min={5}
+                    max={15}
+                    onChange={(elevenstRate) => patch({ elevenstRate })}
+                  />
                 ) : null}
                 <label className="block sm:col-span-2 text-sm">
                   목표 실마진 {(input.targetMarginRate * 100).toFixed(0)}%
@@ -404,6 +416,24 @@ function Calculator({
                   onChange={(targetMonthlyProfit) => patch({ targetMonthlyProfit })}
                 />
                 <MoneyField label="월 판매량" value={input.monthlyUnits} onChange={(monthlyUnits) => patch({ monthlyUnits })} />
+                <MoneyField label="쿠폰 (판매자 부담)" value={input.couponAmount} onChange={(couponAmount) => patch({ couponAmount, couponBearer: 'SELLER' })} />
+                <label className="block sm:col-span-2 text-sm">
+                  반품률 {(input.returnRate * 100).toFixed(0)}%
+                  <input
+                    type="range"
+                    min={0}
+                    max={30}
+                    value={input.returnRate * 100}
+                    onChange={(e) => patch({ returnRate: Number(e.target.value) / 100 })}
+                  />
+                </label>
+                {input.returnRate > 0 ? (
+                  <MoneyField
+                    label="반품 배송비 (건당)"
+                    value={input.returnShippingCost}
+                    onChange={(returnShippingCost) => patch({ returnShippingCost })}
+                  />
+                ) : null}
               </div>
             ) : null}
           </div>
@@ -426,6 +456,7 @@ function Calculator({
               <p className="mt-4 font-medium">{insight.headline}</p>
               <p className="mt-1 text-sm opacity-90">{insight.body}</p>
             </div>
+            <RoasPanel result={result} />
             <div className="rounded-3xl border border-line bg-paper p-6">
               <h3 className="text-sm font-semibold">비용 구조</h3>
               <dl className="mt-3 space-y-1.5 text-sm">
@@ -539,6 +570,33 @@ function Calculator({
         </div>
       </div>
     </section>
+  )
+}
+
+function formatRoas(n: number | null): string {
+  if (n === null) return '—'
+  return `${n.toFixed(2)}배`
+}
+
+function RoasPanel({ result }: { result: ReturnType<typeof calculateMargin> }) {
+  if (result.breakEvenRoas === null && result.impliedRoas === null) return null
+
+  return (
+    <div className="rounded-3xl border border-line bg-paper p-6">
+      <h3 className="text-sm font-semibold">광고 ROAS</h3>
+      <p className="mt-1 text-xs text-black/50">광고비 포함 전 마진 기준 손익분기 ROAS · 현재 입력 기준 추정 ROAS</p>
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        <Metric label="손익분기 ROAS" value={formatRoas(result.breakEvenRoas)} />
+        <Metric label="현재 ROAS" value={formatRoas(result.impliedRoas)} />
+      </div>
+      {result.breakEvenRoas !== null && result.impliedRoas !== null ? (
+        <p className="mt-3 text-xs text-black/55">
+          {result.impliedRoas >= result.breakEvenRoas
+            ? `현재 ROAS(${formatRoas(result.impliedRoas)})가 손익분기(${formatRoas(result.breakEvenRoas)}) 이상입니다.`
+            : `현재 ROAS(${formatRoas(result.impliedRoas)})가 손익분기(${formatRoas(result.breakEvenRoas)}) 미만입니다.`}
+        </p>
+      ) : null}
+    </div>
   )
 }
 

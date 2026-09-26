@@ -13,6 +13,22 @@ npm run dev
 
 개발 서버: http://localhost:5174
 
+## 배포 (Vercel)
+
+1. [vercel.com](https://vercel.com)에서 이 저장소를 Import
+2. Framework Preset: **Vite** (자동 감지)
+3. Build Command: `npm run build` · Output: `dist`
+4. Deploy
+
+로컬에서 프로덕션 빌드 확인:
+
+```bash
+npm run build
+npm run preview
+```
+
+`vercel.json`에 SPA 라우팅 설정이 포함되어 있습니다.
+
 ## 원칙
 
 - AI/화면은 계산하지 않음

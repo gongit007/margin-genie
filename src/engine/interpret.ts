@@ -1,4 +1,3 @@
-import { calculateMargin } from './marginEngine'
 import type { MarginInput, MarginResult, RiskLevel } from './types'
 
 export function interpret(result: MarginResult, input: MarginInput): {
