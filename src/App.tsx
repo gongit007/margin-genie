@@ -3,7 +3,9 @@ import { ChannelComparePanel } from './components/ChannelComparePanel'
 import { AiExplainPanel } from './components/AiExplainPanel'
 import { ChannelInsightPanel } from './components/ChannelInsightPanel'
 import { FeeRateSlider } from './components/FeeRateSlider'
+import { MonthlyRevenuePanel } from './components/MonthlyRevenuePanel'
 import { MoneyField } from './components/MoneyField'
+import { ProductComparePanel } from './components/ProductComparePanel'
 import { ProAccountPanel } from './components/ProAccountPanel'
 import { ScenarioComparePanel } from './components/ScenarioComparePanel'
 import { ScenarioPanel } from './components/ScenarioPanel'
@@ -18,10 +20,13 @@ import {
   channelLabel,
   compareChannels,
   COUPANG_CATEGORY_PRESETS,
+  ELEVEN_ST_CATEGORY_PRESETS,
+  GMARKET_CATEGORY_PRESETS,
   emptyInput,
   ENGINE_VERSION,
   interpret,
   krw,
+  matchingCategoryPresetId,
   pct,
   POLICY_VERSION,
   priceLadder,
@@ -68,11 +73,6 @@ function loadInitialState(): { input: MarginInput; compareChannels: ChannelCode[
     input: loadMarginInput(DEMO),
     compareChannels: loadCompareChannels(ALL_COMPARE_CHANNELS),
   }
-}
-
-function matchingCoupangPresetId(rate: number): string {
-  const match = COUPANG_CATEGORY_PRESETS.find((preset) => Math.abs(preset.rate - rate) < 0.0001)
-  return match?.id ?? 'custom'
 }
 
 export default function App() {
@@ -682,7 +682,7 @@ function Calculator({
                       <span className="text-sm font-medium">쿠팡 카테고리 프리셋</span>
                       <select
                         className="mt-1 w-full rounded-xl border border-line px-3 py-2.5"
-                        value={matchingCoupangPresetId(input.coupangCategoryRate)}
+                        value={matchingCategoryPresetId(COUPANG_CATEGORY_PRESETS, input.coupangCategoryRate)}
                         onChange={(e) => {
                           const preset = COUPANG_CATEGORY_PRESETS.find((item) => item.id === e.target.value)
                           if (preset) patch({ coupangCategoryRate: preset.rate })
@@ -706,22 +706,62 @@ function Calculator({
                   </>
                 ) : null}
                 {input.channel === 'ELEVEN_ST' ? (
-                  <FeeRateSlider
-                    label="11번가 수수료 추정"
-                    value={input.elevenstRate}
-                    min={5}
-                    max={15}
-                    onChange={(elevenstRate) => patch({ elevenstRate })}
-                  />
+                  <>
+                    <label className="block sm:col-span-2">
+                      <span className="text-sm font-medium">11번가 카테고리 프리셋</span>
+                      <select
+                        className="mt-1 w-full rounded-xl border border-line px-3 py-2.5"
+                        value={matchingCategoryPresetId(ELEVEN_ST_CATEGORY_PRESETS, input.elevenstRate)}
+                        onChange={(e) => {
+                          const preset = ELEVEN_ST_CATEGORY_PRESETS.find((item) => item.id === e.target.value)
+                          if (preset) patch({ elevenstRate: preset.rate })
+                        }}
+                      >
+                        {ELEVEN_ST_CATEGORY_PRESETS.map((preset) => (
+                          <option key={preset.id} value={preset.id}>
+                            {preset.label}
+                          </option>
+                        ))}
+                        <option value="custom">직접 조정 (슬라이더)</option>
+                      </select>
+                    </label>
+                    <FeeRateSlider
+                      label="11번가 수수료 추정"
+                      value={input.elevenstRate}
+                      min={5}
+                      max={15}
+                      onChange={(elevenstRate) => patch({ elevenstRate })}
+                    />
+                  </>
                 ) : null}
                 {input.channel === 'GMARKET' ? (
-                  <FeeRateSlider
-                    label="G마켓 수수료 추정"
-                    value={input.gmarketRate}
-                    min={8}
-                    max={18}
-                    onChange={(gmarketRate) => patch({ gmarketRate })}
-                  />
+                  <>
+                    <label className="block sm:col-span-2">
+                      <span className="text-sm font-medium">G마켓 카테고리 프리셋</span>
+                      <select
+                        className="mt-1 w-full rounded-xl border border-line px-3 py-2.5"
+                        value={matchingCategoryPresetId(GMARKET_CATEGORY_PRESETS, input.gmarketRate)}
+                        onChange={(e) => {
+                          const preset = GMARKET_CATEGORY_PRESETS.find((item) => item.id === e.target.value)
+                          if (preset) patch({ gmarketRate: preset.rate })
+                        }}
+                      >
+                        {GMARKET_CATEGORY_PRESETS.map((preset) => (
+                          <option key={preset.id} value={preset.id}>
+                            {preset.label}
+                          </option>
+                        ))}
+                        <option value="custom">직접 조정 (슬라이더)</option>
+                      </select>
+                    </label>
+                    <FeeRateSlider
+                      label="G마켓 수수료 추정"
+                      value={input.gmarketRate}
+                      min={8}
+                      max={18}
+                      onChange={(gmarketRate) => patch({ gmarketRate })}
+                    />
+                  </>
                 ) : null}
                 {input.channel === 'AUCTION' ? (
                   <FeeRateSlider
@@ -921,6 +961,7 @@ function Calculator({
               <div className="mt-4 grid grid-cols-2 gap-3">
                 <Metric label="공헌이익" value={krw(result.contributionProfit)} data-testid="margin-result-profit" />
                 <Metric label="실마진율" value={pct(result.marginRate)} />
+                <Metric label="마크업율" value={pct(result.markupRate)} data-testid="markup-rate-inline" />
                 <Metric label="손익분기" value={result.breakEvenPrice ? krw(result.breakEvenPrice) : '—'} />
                 <Metric
                   label="목표 마진 가격"
@@ -944,6 +985,12 @@ function Calculator({
               ) : null}
             </div>
             <RoasPanel result={result} />
+            <MonthlyRevenuePanel
+              input={input}
+              result={result}
+              channelRows={channelRows}
+              onMonthlyUnitsChange={(monthlyUnits) => patch({ monthlyUnits })}
+            />
             <div className="rounded-3xl border border-line bg-paper p-6">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h3 className="text-sm font-semibold">비용 구조</h3>
@@ -990,6 +1037,7 @@ function Calculator({
           allChannels={allCompareChannels}
           selectedChannels={selectedCompareChannels}
           onToggleChannel={onToggleCompareChannel}
+          monthlyUnits={input.monthlyUnits}
         />
         <ChannelInsightPanel rows={compareChannels(input, selectedCompareChannels)} activeChannel={input.channel} />
 
@@ -1033,6 +1081,7 @@ function Calculator({
         <div className="mt-8">
           <ScenarioPanel input={input} onLoad={onLoad} onMutate={() => setScenarioRefreshKey((k) => k + 1)} />
           <ScenarioComparePanel refreshKey={scenarioRefreshKey} />
+          <ProductComparePanel input={input} compareChannels={selectedCompareChannels} onLoadProduct={onLoad} />
           <div className="mt-4 rounded-3xl border border-line bg-paper p-6">
             <h3 className="font-semibold">전체 백업</h3>
             <p className="mt-1 text-xs text-black/50">현재 입력·시나리오·비교 채널 설정을 한 JSON 파일로 저장합니다.</p>

@@ -35,6 +35,32 @@ export const COUPANG_CATEGORY_PRESETS: CoupangCategoryPreset[] = [
   { id: 'home', label: '생활·주방 (약 10.8%)', rate: 0.108 },
 ]
 
+export const ELEVEN_ST_CATEGORY_PRESETS: CoupangCategoryPreset[] = [
+  { id: 'default', label: '일반 (기본 11%)', rate: 0.11 },
+  { id: 'fashion', label: '패션·잡화 (약 9%)', rate: 0.09 },
+  { id: 'digital', label: '디지털·가전 (약 7.5%)', rate: 0.075 },
+  { id: 'food', label: '식품 (약 12%)', rate: 0.12 },
+  { id: 'beauty', label: '뷰티 (약 11%)', rate: 0.11 },
+  { id: 'home', label: '생활·주방 (약 11%)', rate: 0.11 },
+]
+
+export const GMARKET_CATEGORY_PRESETS: CoupangCategoryPreset[] = [
+  { id: 'default', label: '일반 (기본 13%)', rate: 0.13 },
+  { id: 'fashion', label: '패션·잡화 (약 12%)', rate: 0.12 },
+  { id: 'digital', label: '디지털·가전 (약 10%)', rate: 0.1 },
+  { id: 'food', label: '식품 (약 14%)', rate: 0.14 },
+  { id: 'beauty', label: '뷰티 (약 13%)', rate: 0.13 },
+  { id: 'home', label: '생활·주방 (약 13%)', rate: 0.13 },
+]
+
+export function matchingCategoryPresetId(
+  presets: CoupangCategoryPreset[],
+  rate: number,
+): string {
+  const match = presets.find((preset) => Math.abs(preset.rate - rate) < 0.0001)
+  return match?.id ?? 'custom'
+}
+
 function component(partial: Omit<FeeComponent, 'fixedFee' | 'vatMode'> & Partial<FeeComponent>): FeeComponent {
   return {
     fixedFee: 0,

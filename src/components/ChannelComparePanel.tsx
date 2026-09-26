@@ -6,12 +6,14 @@ type ChannelComparePanelProps = {
   allChannels?: ChannelCode[]
   selectedChannels?: ChannelCode[]
   onToggleChannel?: (code: ChannelCode) => void
+  monthlyUnits?: number
 }
 
-export function ChannelComparePanel({ rows, allChannels, selectedChannels, onToggleChannel }: ChannelComparePanelProps) {
+export function ChannelComparePanel({ rows, allChannels, selectedChannels, onToggleChannel, monthlyUnits = 0 }: ChannelComparePanelProps) {
   if (!rows.length) return null
   const best = rows.reduce((a, b) => (a.contributionProfit > b.contributionProfit ? a : b))
   const showToggles = allChannels && selectedChannels && onToggleChannel
+  const showMonthly = monthlyUnits > 0
 
   return (
     <div className="mt-8 rounded-3xl border border-line bg-paper p-6" data-testid="channel-compare">
@@ -55,6 +57,7 @@ export function ChannelComparePanel({ rows, allChannels, selectedChannels, onTog
               <th>공헌이익</th>
               <th>실마진</th>
               <th>판매수수료</th>
+              {showMonthly ? <th>월 공헌</th> : null}
               <th>손익분기</th>
               <th>판정</th>
             </tr>
@@ -71,6 +74,7 @@ export function ChannelComparePanel({ rows, allChannels, selectedChannels, onTog
                   <td className="tabular-nums">{krw(row.contributionProfit)}</td>
                   <td>{pct(row.marginRate)}</td>
                   <td className="tabular-nums">{krw(row.salesFee + row.paymentFee)}</td>
+                  {showMonthly ? <td className="tabular-nums">{krw(row.monthlyContribution)}</td> : null}
                   <td className="tabular-nums">{row.breakEvenPrice ? krw(row.breakEvenPrice) : '—'}</td>
                   <td>{riskLabel(row.risk).text}</td>
                 </tr>

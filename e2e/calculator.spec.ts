@@ -22,7 +22,11 @@ test.describe('margin-genie calculator', () => {
   test('shows live margin result and channel compare', async ({ page }) => {
     await page.goto('/#calculator')
     await expect(page.getByTestId('margin-result-profit')).toBeVisible()
+    await expect(page.getByTestId('markup-rate-inline')).toBeVisible()
+    await expect(page.getByTestId('monthly-revenue-panel')).toBeVisible()
+    await expect(page.getByTestId('monthly-contribution')).toBeVisible()
     await expect(page.getByTestId('channel-compare')).toBeVisible()
+    await expect(page.getByTestId('product-compare-panel')).toBeVisible()
     await expect(page.getByTestId('sensitivity-panel')).toBeVisible()
     await expect(page.getByTestId('pro-account-panel')).toBeVisible()
     await expect(page.getByTestId('ai-explain-panel')).toBeVisible()

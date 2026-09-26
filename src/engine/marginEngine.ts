@@ -168,7 +168,7 @@ export function calculateMargin(input: MarginInput): MarginResult {
   const contributionProfit = won(netSales - totalVariableCost)
   const marginRate = netSales > 0 ? contributionProfit / netSales : null
   const costRate = netSales > 0 ? totalVariableCost / netSales : null
-  const markupRate = input.productCost > 0 ? (input.listPrice - input.productCost) / input.productCost : null
+  const markupRate = input.productCost > 0 ? contributionProfit / input.productCost : null
 
   const breakEvenPrice = solveListPrice(input, 'zero')
   const targetMarginPrice = solveListPrice(input, 'margin')
