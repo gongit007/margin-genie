@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { ChannelComparePanel } from './components/ChannelComparePanel'
 import { FeeRateSlider } from './components/FeeRateSlider'
 import { MoneyField } from './components/MoneyField'
+import { ScenarioComparePanel } from './components/ScenarioComparePanel'
 import { ScenarioPanel } from './components/ScenarioPanel'
+import { ValidationNotes } from './components/ValidationNotes'
 import { downloadChannelCompareCsv } from './export/channelCompareCsv'
 import { downloadMarginCsv } from './export/marginCsv'
 import { printMarginReport } from './export/marginReport'
@@ -10,11 +13,14 @@ import {
   channelLabel,
   compareChannels,
   emptyInput,
+  ENGINE_VERSION,
   interpret,
   krw,
   pct,
+  POLICY_VERSION,
   priceLadder,
   riskLabel,
+  validateInput,
   type AdMode,
   type ChannelCode,
   type MarginInput,
@@ -312,7 +318,10 @@ export default function App() {
       </main>
 
       <footer className="border-t border-line px-4 py-10 text-center text-xs text-black/45">
-        마진지니 · 세무·투자 자문이 아닙니다. 최종 정산은 각 판매자센터를 확인하세요.
+        <p>마진지니 · 세무·투자 자문이 아닙니다. 최종 정산은 각 판매자센터를 확인하세요.</p>
+        <p className="mt-1">
+          엔진 {ENGINE_VERSION} · 정책 {POLICY_VERSION}
+        </p>
       </footer>
     </div>
   )
@@ -355,7 +364,9 @@ function Calculator({
 }) {
   const insight = interpret(result, input)
   const risk = riskLabel(result.risk)
+  const inputErrors = useMemo(() => validateInput(input), [input])
   const [advanced, setAdvanced] = useState(false)
+  const [scenarioRefreshKey, setScenarioRefreshKey] = useState(0)
   const ladder = useMemo(() => {
     const mid = input.listPrice
     const prices = [mid - 20000, mid - 8000, mid, mid + 10000, mid + 20000].filter((p) => p >= 1000)
@@ -378,6 +389,7 @@ function Calculator({
         <p className="text-xs font-semibold tracking-[0.16em] text-black/40">LIVE CALCULATOR</p>
         <h2 className="mt-3 text-3xl font-semibold">내 상품, 얼마에 팔아야 남을까?</h2>
         <p className="mt-2 text-black/55">입력 4개로 시작하고, 상세 설정은 필요할 때만 엽니다.</p>
+        <ValidationNotes errors={inputErrors} warnings={result.warnings} />
 
         <div className="mt-10 grid gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.15fr)]">
           <div className="rounded-3xl border border-line bg-paper p-6">
@@ -531,6 +543,13 @@ function Calculator({
                 />
                 <MoneyField label="월 판매량" value={input.monthlyUnits} onChange={(monthlyUnits) => patch({ monthlyUnits })} />
                 <MoneyField label="쿠폰 (판매자 부담)" value={input.couponAmount} onChange={(couponAmount) => patch({ couponAmount, couponBearer: 'SELLER' })} />
+                <FeeRateSlider
+                  label="할인율"
+                  value={input.discountRate}
+                  min={0}
+                  max={40}
+                  onChange={(discountRate) => patch({ discountRate })}
+                />
                 <label className="block sm:col-span-2 text-sm">
                   반품률 {(input.returnRate * 100).toFixed(0)}%
                   <input
@@ -569,6 +588,13 @@ function Calculator({
               </div>
               <p className="mt-4 font-medium">{insight.headline}</p>
               <p className="mt-1 text-sm opacity-90">{insight.body}</p>
+              {insight.actions.length ? (
+                <ul className="mt-2 space-y-1 text-sm opacity-90">
+                  {insight.actions.map((action) => (
+                    <li key={action}>· {action}</li>
+                  ))}
+                </ul>
+              ) : null}
             </div>
             <RoasPanel result={result} />
             <div className="rounded-3xl border border-line bg-paper p-6">
@@ -612,6 +638,8 @@ function Calculator({
           </div>
         </div>
 
+        <ChannelComparePanel rows={channelRows} />
+
         <div className="mt-8 rounded-3xl border border-line bg-paper p-6">
           <h3 className="font-semibold">가격을 바꿔보세요</h3>
           <input
@@ -648,7 +676,8 @@ function Calculator({
         </div>
 
         <div className="mt-8">
-          <ScenarioPanel input={input} onLoad={onLoad} />
+          <ScenarioPanel input={input} onLoad={onLoad} onMutate={() => setScenarioRefreshKey((k) => k + 1)} />
+          <ScenarioComparePanel refreshKey={scenarioRefreshKey} />
         </div>
 
         <div className="mt-6 grid gap-6 lg:grid-cols-2">
@@ -693,11 +722,6 @@ function Calculator({
                 <Metric label="월 영업이익 (고정비 차감)" value={krw(result.monthlyOperatingProfit)} />
               ) : null}
             </div>
-            {result.warnings.map((w) => (
-              <p key={w} className="mt-2 text-xs text-amber-800">
-                {w}
-              </p>
-            ))}
           </div>
         </div>
       </div>

@@ -5,14 +5,18 @@ import { deleteScenario, listScenarios, saveScenario, type SavedScenario } from 
 type ScenarioPanelProps = {
   input: MarginInput
   onLoad: (input: MarginInput) => void
+  onMutate?: () => void
 }
 
-export function ScenarioPanel({ input, onLoad }: ScenarioPanelProps) {
+export function ScenarioPanel({ input, onLoad, onMutate }: ScenarioPanelProps) {
   const [name, setName] = useState('')
   const [scenarios, setScenarios] = useState<SavedScenario[]>(() => listScenarios())
   const [message, setMessage] = useState('')
 
-  const refresh = () => setScenarios(listScenarios())
+  const refresh = () => {
+    setScenarios(listScenarios())
+    onMutate?.()
+  }
 
   const handleSave = () => {
     const saved = saveScenario(name, input)
