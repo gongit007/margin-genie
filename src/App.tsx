@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { FeeRateSlider } from './components/FeeRateSlider'
 import { MoneyField } from './components/MoneyField'
+import { ScenarioPanel } from './components/ScenarioPanel'
+import { downloadMarginCsv } from './export/marginCsv'
 import {
   calculateMargin,
   channelLabel,
@@ -11,6 +13,7 @@ import {
   pct,
   priceLadder,
   riskLabel,
+  type AdMode,
   type ChannelCode,
   type MarginInput,
 } from './engine'
@@ -204,7 +207,7 @@ export default function App() {
           </div>
         </section>
 
-        <Calculator input={input} patch={patch} result={result} />
+        <Calculator input={input} patch={patch} result={result} onLoad={setInput} />
 
         <section className="border-t border-line bg-paper py-20">
           <div className="mx-auto max-w-6xl px-4">
@@ -302,10 +305,12 @@ function Calculator({
   input,
   patch,
   result,
+  onLoad,
 }: {
   input: MarginInput
   patch: (p: Partial<MarginInput>) => void
   result: ReturnType<typeof calculateMargin>
+  onLoad: (input: MarginInput) => void
 }) {
   const insight = interpret(result, input)
   const risk = riskLabel(result.risk)
@@ -361,11 +366,49 @@ function Calculator({
             {advanced ? (
               <div className="mt-4 grid gap-3 border-t border-line pt-4 sm:grid-cols-2">
                 <MoneyField label="포장비" value={input.packagingCost} onChange={(packagingCost) => patch({ packagingCost })} />
-                <MoneyField
-                  label="개당 광고비"
-                  value={input.advertisingPerOrder}
-                  onChange={(advertisingPerOrder) => patch({ advertisingMode: 'PER_ORDER', advertisingPerOrder, advertisingRate: 0 })}
-                />
+                <MoneyField label="월 고정비" value={input.monthlyFixedCost} onChange={(monthlyFixedCost) => patch({ monthlyFixedCost })} />
+                <label className="block sm:col-span-2">
+                  <span className="text-sm font-medium">광고비 입력 방식</span>
+                  <select
+                    className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5"
+                    value={input.advertisingMode}
+                    onChange={(e) => patch({ advertisingMode: e.target.value as AdMode })}
+                  >
+                    <option value="PER_ORDER">개당 고정</option>
+                    <option value="PERCENT_OF_NET">실매출 비율</option>
+                    <option value="MONTHLY">월 예산 ÷ 판매량</option>
+                  </select>
+                </label>
+                {input.advertisingMode === 'PER_ORDER' ? (
+                  <MoneyField
+                    label="개당 광고비"
+                    value={input.advertisingPerOrder}
+                    onChange={(advertisingPerOrder) => patch({ advertisingPerOrder })}
+                  />
+                ) : null}
+                {input.advertisingMode === 'PERCENT_OF_NET' ? (
+                  <FeeRateSlider
+                    label="광고비율"
+                    value={input.advertisingRate}
+                    min={0}
+                    max={40}
+                    onChange={(advertisingRate) => patch({ advertisingRate })}
+                  />
+                ) : null}
+                {input.advertisingMode === 'MONTHLY' ? (
+                  <>
+                    <MoneyField
+                      label="월 광고 예산"
+                      value={input.monthlyAdBudget}
+                      onChange={(monthlyAdBudget) => patch({ monthlyAdBudget })}
+                    />
+                    <MoneyField
+                      label="예상 월 판매량"
+                      value={input.expectedMonthlyUnits}
+                      onChange={(expectedMonthlyUnits) => patch({ expectedMonthlyUnits })}
+                    />
+                  </>
+                ) : null}
                 {input.channel === 'NAVER_SMARTSTORE' ? (
                   <label className="block sm:col-span-2">
                     <span className="text-sm font-medium">Npay 등급</span>
@@ -399,6 +442,24 @@ function Calculator({
                     max={15}
                     onChange={(elevenstRate) => patch({ elevenstRate })}
                   />
+                ) : null}
+                {input.channel === 'CUSTOM' ? (
+                  <>
+                    <FeeRateSlider
+                      label="판매수수료 (직접)"
+                      value={input.customSalesFeeRate ?? 0}
+                      min={0}
+                      max={30}
+                      onChange={(customSalesFeeRate) => patch({ customSalesFeeRate })}
+                    />
+                    <FeeRateSlider
+                      label="결제수수료 (직접)"
+                      value={input.customPaymentFeeRate ?? 0}
+                      min={0}
+                      max={10}
+                      onChange={(customPaymentFeeRate) => patch({ customPaymentFeeRate })}
+                    />
+                  </>
                 ) : null}
                 <label className="block sm:col-span-2 text-sm">
                   목표 실마진 {(input.targetMarginRate * 100).toFixed(0)}%
@@ -458,7 +519,16 @@ function Calculator({
             </div>
             <RoasPanel result={result} />
             <div className="rounded-3xl border border-line bg-paper p-6">
-              <h3 className="text-sm font-semibold">비용 구조</h3>
+              <div className="flex items-center justify-between gap-3">
+                <h3 className="text-sm font-semibold">비용 구조</h3>
+                <button
+                  type="button"
+                  className="rounded-full border border-line px-3 py-1 text-xs font-medium hover:bg-canvas"
+                  onClick={() => downloadMarginCsv(input, result)}
+                >
+                  CSV 내보내기
+                </button>
+              </div>
               <dl className="mt-3 space-y-1.5 text-sm">
                 <Row k="판매가" v={krw(result.listPrice)} />
                 {result.costLines.map((line) => (
@@ -522,6 +592,10 @@ function Calculator({
           </div>
         </div>
 
+        <div className="mt-8">
+          <ScenarioPanel input={input} onLoad={onLoad} />
+        </div>
+
         <div className="mt-6 grid gap-6 lg:grid-cols-2">
           <div className="rounded-3xl border border-line bg-paper p-6">
             <h3 className="font-semibold">프로모션 시뮬</h3>
@@ -560,6 +634,9 @@ function Calculator({
                     : '개당 이익이 없어 역산 불가'
                 }
               />
+              {input.monthlyFixedCost > 0 ? (
+                <Metric label="월 영업이익 (고정비 차감)" value={krw(result.monthlyOperatingProfit)} />
+              ) : null}
             </div>
             {result.warnings.map((w) => (
               <p key={w} className="mt-2 text-xs text-amber-800">

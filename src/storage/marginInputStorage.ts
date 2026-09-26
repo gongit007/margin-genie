@@ -12,7 +12,8 @@ function asNumber(v: unknown, fallback: number): number {
   return typeof v === 'number' && Number.isFinite(v) ? v : fallback
 }
 
-function sanitize(parsed: Record<string, unknown>, fallback: MarginInput): MarginInput {
+export function sanitizeMarginInput(parsed: unknown, fallback: MarginInput): MarginInput {
+  if (!isRecord(parsed)) return fallback
   const base = emptyInput()
   const channel = parsed.channel
   return {
@@ -62,7 +63,7 @@ export function loadMarginInput(fallback: MarginInput): MarginInput {
     if (!raw) return fallback
     const parsed: unknown = JSON.parse(raw)
     if (!isRecord(parsed)) return fallback
-    return sanitize(parsed, fallback)
+    return sanitizeMarginInput(parsed, fallback)
   } catch {
     return fallback
   }
