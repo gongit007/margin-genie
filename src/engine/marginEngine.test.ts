@@ -149,6 +149,21 @@ describe('margin engine', () => {
     expect(atTarget.marginRate!).toBeCloseTo(0.25, 2)
   })
 
+  it('calculates own store with default pg fee', () => {
+    const result = calculateMargin({
+      ...emptyInput(),
+      channel: 'OWN_STORE',
+      listPrice: 50000,
+      productCost: 15000,
+      advertisingPerOrder: 0,
+      customSalesFeeRate: null,
+      customPaymentFeeRate: null,
+    })
+    expect(result.feePolicy.channel).toBe('OWN_STORE')
+    expect(result.paymentFee).toBeGreaterThan(0)
+    expect(result.salesFee).toBe(0)
+  })
+
   it('returns null target price when fees exceed capacity', () => {
     const result = calculateMargin({
       ...emptyInput(),

@@ -127,6 +127,41 @@ export function resolveFeePolicy(input: MarginInput): ChannelFeePolicy {
     }
   }
 
+  if (input.channel === 'OWN_STORE') {
+    const salesRate = input.customSalesFeeRate ?? 0
+    const paymentRate = input.customPaymentFeeRate ?? 0.033
+    return {
+      channel: 'OWN_STORE',
+      name: '자사몰 (D2C)',
+      channelType: 'd2c',
+      category: 'pg_estimated',
+      lastVerified: '2026-10-01',
+      disclaimer: 'PG·호스팅·앱 수수료는 결제사·플랫폼마다 다릅니다. 실제 정산서로 확인하세요.',
+      components: [
+        component({
+          code: 'sales_fee',
+          label: '플랫폼 판매수수료',
+          rate: salesRate,
+          verificationStatus: 'USER_DEFINED',
+          sourceType: 'user',
+          sourceReference: '기본 0% · 자사몰은 보통 판매수수료 없음',
+          effectiveFrom: 'user',
+          notes: '카페24·고도몰 등 월 이용료는 고정비(월 고정비)로 넣으세요.',
+        }),
+        component({
+          code: 'payment_fee',
+          label: 'PG 결제수수료 (추정)',
+          rate: paymentRate,
+          verificationStatus: input.customPaymentFeeRate == null ? 'ESTIMATED' : 'USER_DEFINED',
+          sourceType: 'estimated',
+          sourceReference: '국내 PG 일반 구간 약 2.5~3.5% · 기본 3.3%',
+          effectiveFrom: '2026-10-01',
+          notes: '할부·해외카드는 별도 요율입니다.',
+        }),
+      ],
+    }
+  }
+
   const salesRate = input.customSalesFeeRate ?? 0
   const paymentRate = input.customPaymentFeeRate ?? 0
   return {
@@ -185,6 +220,8 @@ export function channelLabel(code: ChannelCode): string {
       return '쿠팡'
     case 'ELEVEN_ST':
       return '11번가'
+    case 'OWN_STORE':
+      return '자사몰 (D2C)'
     default:
       return '직접 입력'
   }

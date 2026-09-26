@@ -2,7 +2,7 @@ import { emptyInput, type ChannelCode, type MarginInput } from '../engine'
 
 const STORAGE_KEY = 'margin-genie:input:v1'
 
-const CHANNELS: ChannelCode[] = ['NAVER_SMARTSTORE', 'COUPANG', 'ELEVEN_ST', 'CUSTOM']
+const CHANNELS: ChannelCode[] = ['NAVER_SMARTSTORE', 'COUPANG', 'ELEVEN_ST', 'OWN_STORE', 'CUSTOM']
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v)

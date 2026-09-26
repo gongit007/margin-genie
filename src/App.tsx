@@ -63,7 +63,8 @@ export default function App() {
     saveMarginInput(input)
   }, [input])
   const result = useMemo(() => calculateMargin(input), [input])
-  const rows = useMemo(() => compareChannels(input, ['NAVER_SMARTSTORE', 'COUPANG', 'ELEVEN_ST']), [input])
+  const compareChannelCodes: ChannelCode[] = ['NAVER_SMARTSTORE', 'COUPANG', 'ELEVEN_ST', 'OWN_STORE']
+  const rows = useMemo(() => compareChannels(input, compareChannelCodes), [input])
   const best = rows.reduce((a, b) => (a.contributionProfit > b.contributionProfit ? a : b))
 
   return (
@@ -135,7 +136,7 @@ export default function App() {
             </div>
             <div className="mt-14 grid gap-8 border-t border-line pt-8 sm:grid-cols-3">
               <Stat n="Engine" l="숫자가 LLM이 아님" />
-              <Stat n="3+" l="스마트스토어 · 쿠팡 · 11번가" />
+              <Stat n="4+" l="스마트스토어 · 쿠팡 · 11번가 · 자사몰" />
               <Stat n="출처" l="VERIFIED / ESTIMATED 구분" />
             </div>
 
@@ -157,7 +158,7 @@ export default function App() {
                   아래 채널 마진은 위 숫자와 <strong>같은 계산 엔진</strong>으로 실시간 갱신됩니다.
                 </p>
               </div>
-              <div className="mt-6 grid gap-3 md:grid-cols-3">
+              <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 {rows.map((row) => {
                   const win = row.feePolicy.channel === best.feePolicy.channel
                   return (
@@ -247,6 +248,8 @@ export default function App() {
           onLoad={setInput}
           onShare={handleShare}
           shareMessage={shareMessage}
+          onReset={() => setInput({ ...DEMO })}
+          compareChannelCodes={compareChannelCodes}
         />
 
         <section className="border-t border-line bg-paper py-20">
@@ -353,6 +356,8 @@ function Calculator({
   onLoad,
   onShare,
   shareMessage,
+  onReset,
+  compareChannelCodes,
 }: {
   input: MarginInput
   patch: (p: Partial<MarginInput>) => void
@@ -361,12 +366,18 @@ function Calculator({
   onLoad: (input: MarginInput) => void
   onShare: () => void
   shareMessage: string
+  onReset: () => void
+  compareChannelCodes: ChannelCode[]
 }) {
   const insight = interpret(result, input)
   const risk = riskLabel(result.risk)
   const inputErrors = useMemo(() => validateInput(input), [input])
   const [advanced, setAdvanced] = useState(false)
   const [scenarioRefreshKey, setScenarioRefreshKey] = useState(0)
+  const [feeOverride, setFeeOverride] = useState(
+    () => input.customSalesFeeRate != null || input.customPaymentFeeRate != null,
+  )
+  const isMarketplace = input.channel === 'NAVER_SMARTSTORE' || input.channel === 'COUPANG' || input.channel === 'ELEVEN_ST'
   const ladder = useMemo(() => {
     const mid = input.listPrice
     const prices = [mid - 20000, mid - 8000, mid, mid + 10000, mid + 20000].filter((p) => p >= 1000)
@@ -381,14 +392,38 @@ function Calculator({
     ]
     return scenarios.map((s) => ({ name: s.name, result: calculateMargin({ ...input, ...s.next }) }))
   }, [input])
-  const channels: ChannelCode[] = ['NAVER_SMARTSTORE', 'COUPANG', 'ELEVEN_ST', 'CUSTOM']
+  const channels: ChannelCode[] = ['NAVER_SMARTSTORE', 'COUPANG', 'ELEVEN_ST', 'OWN_STORE', 'CUSTOM']
+
+  const handleChannelChange = (channel: ChannelCode) => {
+    if (channel === 'OWN_STORE') {
+      patch({
+        channel,
+        customSalesFeeRate: input.customSalesFeeRate ?? 0,
+        customPaymentFeeRate: input.customPaymentFeeRate ?? 0.033,
+      })
+      return
+    }
+    if (channel === 'CUSTOM') {
+      patch({ channel })
+      return
+    }
+    setFeeOverride(false)
+    patch({ channel, customSalesFeeRate: null, customPaymentFeeRate: null })
+  }
 
   return (
     <section id="calculator" className="border-t border-line bg-canvas py-20">
       <div className="mx-auto max-w-6xl px-4">
         <p className="text-xs font-semibold tracking-[0.16em] text-black/40">LIVE CALCULATOR</p>
-        <h2 className="mt-3 text-3xl font-semibold">내 상품, 얼마에 팔아야 남을까?</h2>
-        <p className="mt-2 text-black/55">입력 4개로 시작하고, 상세 설정은 필요할 때만 엽니다.</p>
+        <div className="mt-3 flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="text-3xl font-semibold">내 상품, 얼마에 팔아야 남을까?</h2>
+            <p className="mt-2 text-black/55">입력 4개로 시작하고, 상세 설정은 필요할 때만 엽니다.</p>
+          </div>
+          <button type="button" className="text-sm text-black/50 underline underline-offset-2 hover:text-ink" onClick={onReset}>
+            입력 초기화
+          </button>
+        </div>
         <ValidationNotes errors={inputErrors} warnings={result.warnings} />
 
         <div className="mt-10 grid gap-6 lg:grid-cols-[minmax(0,0.95fr)_minmax(0,1.15fr)]">
@@ -415,7 +450,7 @@ function Calculator({
                 <select
                   className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5"
                   value={input.channel}
-                  onChange={(e) => patch({ channel: e.target.value as ChannelCode })}
+                  onChange={(e) => handleChannelChange(e.target.value as ChannelCode)}
                 >
                   {channels.map((c) => (
                     <option key={c} value={c}>
@@ -431,6 +466,7 @@ function Calculator({
             {advanced ? (
               <div className="mt-4 grid gap-3 border-t border-line pt-4 sm:grid-cols-2">
                 <MoneyField label="포장비" value={input.packagingCost} onChange={(packagingCost) => patch({ packagingCost })} />
+                <MoneyField label="기타 변동비" value={input.otherCost} onChange={(otherCost) => patch({ otherCost })} />
                 <MoneyField label="월 고정비" value={input.monthlyFixedCost} onChange={(monthlyFixedCost) => patch({ monthlyFixedCost })} />
                 <label className="block sm:col-span-2">
                   <span className="text-sm font-medium">광고비 입력 방식</span>
@@ -508,23 +544,57 @@ function Calculator({
                     onChange={(elevenstRate) => patch({ elevenstRate })}
                   />
                 ) : null}
-                {input.channel === 'CUSTOM' ? (
+                {input.channel === 'OWN_STORE' || input.channel === 'CUSTOM' ? (
                   <>
                     <FeeRateSlider
-                      label="판매수수료 (직접)"
+                      label={input.channel === 'OWN_STORE' ? '플랫폼 수수료' : '판매수수료 (직접)'}
                       value={input.customSalesFeeRate ?? 0}
                       min={0}
                       max={30}
                       onChange={(customSalesFeeRate) => patch({ customSalesFeeRate })}
                     />
                     <FeeRateSlider
-                      label="결제수수료 (직접)"
-                      value={input.customPaymentFeeRate ?? 0}
+                      label={input.channel === 'OWN_STORE' ? 'PG 결제수수료' : '결제수수료 (직접)'}
+                      value={input.customPaymentFeeRate ?? (input.channel === 'OWN_STORE' ? 0.033 : 0)}
                       min={0}
                       max={10}
                       onChange={(customPaymentFeeRate) => patch({ customPaymentFeeRate })}
                     />
                   </>
+                ) : null}
+                {isMarketplace ? (
+                  <div className="sm:col-span-2 space-y-3 rounded-xl bg-canvas p-3">
+                    <label className="flex items-center gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        checked={feeOverride}
+                        onChange={(e) => {
+                          const on = e.target.checked
+                          setFeeOverride(on)
+                          if (!on) patch({ customSalesFeeRate: null, customPaymentFeeRate: null })
+                        }}
+                      />
+                      판매자센터 확정 수수료로 덮어쓰기
+                    </label>
+                    {feeOverride ? (
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <FeeRateSlider
+                          label="판매수수료 (덮어쓰기)"
+                          value={input.customSalesFeeRate ?? 0}
+                          min={0}
+                          max={30}
+                          onChange={(customSalesFeeRate) => patch({ customSalesFeeRate })}
+                        />
+                        <FeeRateSlider
+                          label="결제수수료 (덮어쓰기)"
+                          value={input.customPaymentFeeRate ?? 0}
+                          min={0}
+                          max={10}
+                          onChange={(customPaymentFeeRate) => patch({ customPaymentFeeRate })}
+                        />
+                      </div>
+                    ) : null}
+                  </div>
                 ) : null}
                 <label className="block sm:col-span-2 text-sm">
                   목표 실마진 {(input.targetMarginRate * 100).toFixed(0)}%
@@ -561,12 +631,29 @@ function Calculator({
                   />
                 </label>
                 {input.returnRate > 0 ? (
-                  <MoneyField
-                    label="반품 배송비 (건당)"
-                    value={input.returnShippingCost}
-                    onChange={(returnShippingCost) => patch({ returnShippingCost })}
-                  />
+                  <>
+                    <MoneyField
+                      label="반품 배송비 (건당)"
+                      value={input.returnShippingCost}
+                      onChange={(returnShippingCost) => patch({ returnShippingCost })}
+                    />
+                    <label className="block sm:col-span-2 text-sm">
+                      폐기율 {(input.discardRate * 100).toFixed(0)}%
+                      <input
+                        type="range"
+                        min={0}
+                        max={100}
+                        value={input.discardRate * 100}
+                        onChange={(e) => patch({ discardRate: Number(e.target.value) / 100 })}
+                      />
+                    </label>
+                  </>
                 ) : null}
+                <MoneyField
+                  label="목표 개당 이익 (역산)"
+                  value={input.targetUnitProfit}
+                  onChange={(targetUnitProfit) => patch({ targetUnitProfit })}
+                />
               </div>
             ) : null}
           </div>
@@ -638,7 +725,7 @@ function Calculator({
           </div>
         </div>
 
-        <ChannelComparePanel rows={channelRows} />
+        <ChannelComparePanel rows={compareChannels(input, compareChannelCodes)} />
 
         <div className="mt-8 rounded-3xl border border-line bg-paper p-6">
           <h3 className="font-semibold">가격을 바꿔보세요</h3>
@@ -710,6 +797,10 @@ function Calculator({
             <h3 className="font-semibold">역산</h3>
             <div className="mt-4 grid gap-3">
               <Metric label="목표 마진 판매가" value={result.targetMarginPrice ? krw(result.targetMarginPrice) : '불가'} />
+              <Metric
+                label="목표 개당이익 판매가"
+                value={result.targetProfitPrice ? krw(result.targetProfitPrice) : '불가'}
+              />
               <Metric
                 label={`월 ${krw(input.targetMonthlyProfit)} 필요 판매량`}
                 value={

@@ -74,3 +74,33 @@ export function clearScenarios(): void {
   if (typeof localStorage === 'undefined') return
   localStorage.removeItem(STORAGE_KEY)
 }
+
+export function exportScenariosJson(): string {
+  return JSON.stringify(listScenarios(), null, 2)
+}
+
+export function importScenariosJson(json: string): number {
+  const parsed: unknown = JSON.parse(json)
+  if (!Array.isArray(parsed)) throw new Error('시나리오 JSON 형식이 올바르지 않습니다.')
+  const imported: SavedScenario[] = parsed
+    .filter((item): item is SavedScenario => isRecord(item) && typeof item.name === 'string')
+    .map((item) => ({
+      id: typeof item.id === 'string' ? item.id : `sc-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      name: item.name.trim(),
+      savedAt: typeof item.savedAt === 'string' ? item.savedAt : new Date().toISOString(),
+      input: sanitizeMarginInput(item.input, emptyInput()),
+    }))
+    .filter((s) => s.name.length > 0)
+  writeAll([...imported, ...readAll()])
+  return imported.length
+}
+
+export function downloadScenariosBackup(): void {
+  const blob = new Blob([exportScenariosJson()], { type: 'application/json;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = 'margin-genie-scenarios.json'
+  a.click()
+  URL.revokeObjectURL(url)
+}

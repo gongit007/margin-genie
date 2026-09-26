@@ -1,6 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { emptyInput } from '../engine'
-import { clearScenarios, deleteScenario, getScenario, listScenarios, saveScenario } from './scenarioStorage'
+import {
+  clearScenarios,
+  deleteScenario,
+  exportScenariosJson,
+  getScenario,
+  importScenariosJson,
+  listScenarios,
+  saveScenario,
+} from './scenarioStorage'
 
 const store = new Map<string, string>()
 
@@ -38,6 +46,16 @@ describe('scenarioStorage', () => {
 
   it('rejects empty name', () => {
     expect(saveScenario('  ', emptyInput())).toBeNull()
+  })
+
+  it('exports and imports scenarios json', () => {
+    saveScenario('백업 A', { ...emptyInput(), listPrice: 11111 })
+    const json = exportScenariosJson()
+    clearScenarios()
+    expect(listScenarios()).toHaveLength(0)
+    const count = importScenariosJson(json)
+    expect(count).toBe(1)
+    expect(listScenarios()[0].input.listPrice).toBe(11111)
   })
 
   it('loads and deletes scenario', () => {

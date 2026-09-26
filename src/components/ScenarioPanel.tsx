@@ -1,6 +1,13 @@
 import { useState } from 'react'
 import type { MarginInput } from '../engine'
-import { deleteScenario, listScenarios, saveScenario, type SavedScenario } from '../storage/scenarioStorage'
+import {
+  deleteScenario,
+  downloadScenariosBackup,
+  importScenariosJson,
+  listScenarios,
+  saveScenario,
+  type SavedScenario,
+} from '../storage/scenarioStorage'
 
 type ScenarioPanelProps = {
   input: MarginInput
@@ -62,6 +69,36 @@ export function ScenarioPanel({ input, onLoad, onMutate }: ScenarioPanelProps) {
         >
           저장
         </button>
+      </div>
+      <div className="mt-3 flex flex-wrap gap-2">
+        <button
+          type="button"
+          className="rounded-full border border-line px-3 py-1 text-xs font-medium hover:bg-canvas"
+          onClick={() => downloadScenariosBackup()}
+        >
+          JSON 백업
+        </button>
+        <label className="cursor-pointer rounded-full border border-line px-3 py-1 text-xs font-medium hover:bg-canvas">
+          JSON 불러오기
+          <input
+            type="file"
+            accept="application/json,.json"
+            className="hidden"
+            onChange={async (e) => {
+              const file = e.target.files?.[0]
+              if (!file) return
+              try {
+                const text = await file.text()
+                const count = importScenariosJson(text)
+                setMessage(`${count}개 시나리오를 불러왔습니다.`)
+                refresh()
+              } catch {
+                setMessage('JSON 파일을 읽지 못했습니다.')
+              }
+              e.target.value = ''
+            }}
+          />
+        </label>
       </div>
       {message ? <p className="mt-2 text-xs text-black/55">{message}</p> : null}
       {scenarios.length ? (

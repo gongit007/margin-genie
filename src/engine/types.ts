@@ -1,7 +1,7 @@
 export const ENGINE_VERSION = '1.0.0' as const
-export const POLICY_VERSION = '2026-09' as const
+export const POLICY_VERSION = '2026-10' as const
 
-export type ChannelCode = 'NAVER_SMARTSTORE' | 'COUPANG' | 'ELEVEN_ST' | 'CUSTOM'
+export type ChannelCode = 'NAVER_SMARTSTORE' | 'COUPANG' | 'ELEVEN_ST' | 'OWN_STORE' | 'CUSTOM'
 
 export type VerificationStatus = 'VERIFIED' | 'ESTIMATED' | 'USER_DEFINED' | 'EXPIRED' | 'UNKNOWN'
 
