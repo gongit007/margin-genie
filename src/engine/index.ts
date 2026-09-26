@@ -1,5 +1,14 @@
 export { ENGINE_VERSION, POLICY_VERSION, emptyInput } from './types'
-export type { AdMode, ChannelCode, MarginInput, MarginResult, RiskLevel, ShippingPayer, VerificationStatus } from './types'
+export type {
+  AdMode,
+  ChannelCode,
+  MarginInput,
+  MarginResult,
+  RiskLevel,
+  ShippingPayer,
+  VatMode,
+  VerificationStatus,
+} from './types'
 export { calculateMargin, compareChannels, priceLadder, validateInput } from './marginEngine'
 export { channelLabel, resolveFeePolicy } from './feeEngine'
 export { interpret, riskLabel } from './interpret'

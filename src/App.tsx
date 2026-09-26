@@ -26,6 +26,7 @@ import {
   type MarginInput,
   type MarginResult,
   type ShippingPayer,
+  type VatMode,
 } from './engine'
 import { copyShareUrl, readShareInputFromHash } from './share/inputShare'
 import { loadMarginInput, saveMarginInput } from './storage/marginInputStorage'
@@ -63,7 +64,14 @@ export default function App() {
     saveMarginInput(input)
   }, [input])
   const result = useMemo(() => calculateMargin(input), [input])
-  const compareChannelCodes: ChannelCode[] = ['NAVER_SMARTSTORE', 'COUPANG', 'ELEVEN_ST', 'OWN_STORE']
+  const compareChannelCodes: ChannelCode[] = [
+    'NAVER_SMARTSTORE',
+    'COUPANG',
+    'ELEVEN_ST',
+    'GMARKET',
+    'KAKAO',
+    'OWN_STORE',
+  ]
   const rows = useMemo(() => compareChannels(input, compareChannelCodes), [input])
   const best = rows.reduce((a, b) => (a.contributionProfit > b.contributionProfit ? a : b))
 
@@ -136,7 +144,7 @@ export default function App() {
             </div>
             <div className="mt-14 grid gap-8 border-t border-line pt-8 sm:grid-cols-3">
               <Stat n="Engine" l="숫자가 LLM이 아님" />
-              <Stat n="4+" l="스마트스토어 · 쿠팡 · 11번가 · 자사몰" />
+              <Stat n="6+" l="스마트스토어 · 쿠팡 · 11번가 · G마켓 · 카카오 · 자사몰" />
               <Stat n="출처" l="VERIFIED / ESTIMATED 구분" />
             </div>
 
@@ -158,7 +166,7 @@ export default function App() {
                   아래 채널 마진은 위 숫자와 <strong>같은 계산 엔진</strong>으로 실시간 갱신됩니다.
                 </p>
               </div>
-              <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {rows.map((row) => {
                   const win = row.feePolicy.channel === best.feePolicy.channel
                   return (
@@ -377,7 +385,12 @@ function Calculator({
   const [feeOverride, setFeeOverride] = useState(
     () => input.customSalesFeeRate != null || input.customPaymentFeeRate != null,
   )
-  const isMarketplace = input.channel === 'NAVER_SMARTSTORE' || input.channel === 'COUPANG' || input.channel === 'ELEVEN_ST'
+  const isMarketplace =
+    input.channel === 'NAVER_SMARTSTORE' ||
+    input.channel === 'COUPANG' ||
+    input.channel === 'ELEVEN_ST' ||
+    input.channel === 'GMARKET' ||
+    input.channel === 'KAKAO'
   const ladder = useMemo(() => {
     const mid = input.listPrice
     const prices = [mid - 20000, mid - 8000, mid, mid + 10000, mid + 20000].filter((p) => p >= 1000)
@@ -392,7 +405,15 @@ function Calculator({
     ]
     return scenarios.map((s) => ({ name: s.name, result: calculateMargin({ ...input, ...s.next }) }))
   }, [input])
-  const channels: ChannelCode[] = ['NAVER_SMARTSTORE', 'COUPANG', 'ELEVEN_ST', 'OWN_STORE', 'CUSTOM']
+  const channels: ChannelCode[] = [
+    'NAVER_SMARTSTORE',
+    'COUPANG',
+    'ELEVEN_ST',
+    'GMARKET',
+    'KAKAO',
+    'OWN_STORE',
+    'CUSTOM',
+  ]
 
   const handleChannelChange = (channel: ChannelCode) => {
     if (channel === 'OWN_STORE') {
@@ -544,6 +565,48 @@ function Calculator({
                     onChange={(elevenstRate) => patch({ elevenstRate })}
                   />
                 ) : null}
+                {input.channel === 'GMARKET' ? (
+                  <FeeRateSlider
+                    label="G마켓 수수료 추정"
+                    value={input.gmarketRate}
+                    min={8}
+                    max={18}
+                    onChange={(gmarketRate) => patch({ gmarketRate })}
+                  />
+                ) : null}
+                {input.channel === 'KAKAO' ? (
+                  <FeeRateSlider
+                    label="카카오쇼핑 수수료 추정"
+                    value={input.kakaoRate}
+                    min={5}
+                    max={15}
+                    onChange={(kakaoRate) => patch({ kakaoRate })}
+                  />
+                ) : null}
+                <label className="block">
+                  <span className="text-sm font-medium">판매가·원가 VAT</span>
+                  <select
+                    className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5"
+                    value={input.priceVatMode}
+                    onChange={(e) => patch({ priceVatMode: e.target.value as VatMode })}
+                  >
+                    <option value="INCLUDED">VAT 포함 (소비자가 기준)</option>
+                    <option value="EXCLUDED">VAT 별도 (공급가 기준)</option>
+                    <option value="IGNORE">VAT 미적용</option>
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="text-sm font-medium">수수료 VAT 해석</span>
+                  <select
+                    className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5"
+                    value={input.feeVatMode}
+                    onChange={(e) => patch({ feeVatMode: e.target.value as VatMode })}
+                  >
+                    <option value="IGNORE">채널 정책 따름 (권장)</option>
+                    <option value="INCLUDED">전체 VAT 포함율</option>
+                    <option value="EXCLUDED">전체 VAT 10% 가산</option>
+                  </select>
+                </label>
                 {input.channel === 'OWN_STORE' || input.channel === 'CUSTOM' ? (
                   <>
                     <FeeRateSlider
@@ -672,6 +735,12 @@ function Calculator({
                   label="목표 마진 가격"
                   value={result.targetMarginPrice ? krw(result.targetMarginPrice) : '—'}
                 />
+                {result.grossListPrice != null ? (
+                  <Metric label="VAT 포함 판매가" value={krw(result.grossListPrice)} />
+                ) : null}
+                {result.priceVatAmount != null ? (
+                  <Metric label="판매가 VAT (10%)" value={krw(result.priceVatAmount)} />
+                ) : null}
               </div>
               <p className="mt-4 font-medium">{insight.headline}</p>
               <p className="mt-1 text-sm opacity-90">{insight.body}</p>

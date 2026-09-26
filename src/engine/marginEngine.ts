@@ -1,6 +1,21 @@
 import { feeRates, resolveFeePolicy } from './feeEngine'
 import { clamp, ratio, won } from './money'
-import { ENGINE_VERSION, POLICY_VERSION, type CostLine, type MarginInput, type MarginResult, type RiskLevel } from './types'
+import {
+  ENGINE_VERSION,
+  POLICY_VERSION,
+  VAT_RATE,
+  type CostLine,
+  type MarginInput,
+  type MarginResult,
+  type RiskLevel,
+  type VatMode,
+} from './types'
+
+function priceVatBreakdown(listPrice: number, mode: VatMode): { grossListPrice: number | null; priceVatAmount: number | null } {
+  if (mode !== 'EXCLUDED') return { grossListPrice: null, priceVatAmount: null }
+  const priceVatAmount = won(listPrice * VAT_RATE)
+  return { grossListPrice: won(listPrice + priceVatAmount), priceVatAmount }
+}
 
 export function validateInput(input: MarginInput): string[] {
   const errors: string[] = []
@@ -98,7 +113,7 @@ function solveListPrice(
   input: MarginInput,
   kind: 'zero' | 'margin' | 'unitProfit',
 ): number | null {
-  const rates = feeRates(resolveFeePolicy(input))
+  const rates = feeRates(resolveFeePolicy(input), input.feeVatMode)
   const d = clamp(input.discountRate, 0, 1)
   const coupon = input.couponBearer === 'SELLER' ? input.couponAmount : 0
   const adRate = input.advertisingMode === 'PERCENT_OF_NET' ? input.advertisingRate : 0
@@ -133,8 +148,9 @@ function solveListPrice(
 
 export function calculateMargin(input: MarginInput): MarginResult {
   const feePolicy = resolveFeePolicy(input)
-  const rates = feeRates(feePolicy)
+  const rates = feeRates(feePolicy, input.feeVatMode)
   const warnings = [...validateInput(input)]
+  const { grossListPrice, priceVatAmount } = priceVatBreakdown(input.listPrice, input.priceVatMode)
   const { netSales, sellerDiscount, sellerCoupon } = netFromList(input.listPrice, input)
 
   if (netSales <= 0) warnings.push('할인·쿠폰 후 실매출이 0원 이하입니다.')
@@ -200,11 +216,21 @@ export function calculateMargin(input: MarginInput): MarginResult {
   if (feePolicy.components.some((c) => c.verificationStatus === 'ESTIMATED')) {
     warnings.push('일부 수수료는 추정치입니다. 판매자센터 요율을 확인하세요.')
   }
+  if (input.priceVatMode === 'EXCLUDED') {
+    warnings.push('판매가·원가는 VAT 별도(공급가) 기준으로 계산됩니다.')
+  }
+  if (input.feeVatMode === 'EXCLUDED') {
+    warnings.push('모든 수수료 요율에 VAT 10%를 가산해 계산합니다.')
+  } else if (input.feeVatMode === 'INCLUDED') {
+    warnings.push('모든 수수료를 VAT 포함 요율로 해석합니다.')
+  }
 
   return {
     engineVersion: ENGINE_VERSION,
     policyVersion: POLICY_VERSION,
     listPrice: won(input.listPrice),
+    grossListPrice,
+    priceVatAmount,
     netSales,
     sellerDiscount,
     sellerCoupon,

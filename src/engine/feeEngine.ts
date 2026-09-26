@@ -1,3 +1,4 @@
+import { VAT_RATE } from './types'
 import type {
   ChannelCode,
   ChannelFeePolicy,
@@ -5,6 +6,7 @@ import type {
   MarginInput,
   NpayGrade,
   VerificationStatus,
+  VatMode,
 } from './types'
 
 const NPAY_VAT_INCLUDED: Record<NpayGrade, number> = {
@@ -77,8 +79,9 @@ export function resolveFeePolicy(input: MarginInput): ChannelFeePolicy {
       components: [
         component({
           code: 'sales_fee',
-          label: '판매수수료 (추정/입력)',
+          label: '판매수수료 (추정/입력, VAT 별도)',
           rate: salesRate,
+          vatMode: 'EXCLUDED',
           verificationStatus: input.customSalesFeeRate == null ? 'ESTIMATED' : 'USER_DEFINED',
           sourceType: 'estimated_range',
           sourceReference: '공개 카테고리 요율 범위 약 4~10.8% · 공식 1차 표가 아님',
@@ -115,13 +118,64 @@ export function resolveFeePolicy(input: MarginInput): ChannelFeePolicy {
       components: [
         component({
           code: 'sales_fee',
-          label: '판매수수료 (추정/입력)',
+          label: '판매수수료 (추정/입력, VAT 별도)',
           rate: salesRate,
+          vatMode: 'EXCLUDED',
           verificationStatus: input.customSalesFeeRate == null ? 'ESTIMATED' : 'USER_DEFINED',
           sourceType: 'estimated',
           sourceReference: '기본 11%는 추정치입니다. 공식값으로 표시하지 않습니다.',
           effectiveFrom: '2026-01-01',
           notes: '',
+        }),
+      ],
+    }
+  }
+
+  if (input.channel === 'GMARKET') {
+    const salesRate = input.customSalesFeeRate ?? input.gmarketRate
+    return {
+      channel: 'GMARKET',
+      name: 'G마켓 (ESM)',
+      channelType: 'marketplace',
+      category: 'user_or_estimated',
+      lastVerified: '2026-11-01',
+      disclaimer: '카테고리·프로모션·ESM PLUS 요율이 다를 수 있습니다. 판매자센터 정산을 확인하세요.',
+      components: [
+        component({
+          code: 'sales_fee',
+          label: '판매수수료 (추정/입력, VAT 별도)',
+          rate: salesRate,
+          vatMode: 'EXCLUDED',
+          verificationStatus: input.customSalesFeeRate == null ? 'ESTIMATED' : 'USER_DEFINED',
+          sourceType: 'estimated',
+          sourceReference: '일반 카테고리 약 10~15% · VAT 별도 · 기본 13%',
+          effectiveFrom: '2026-11-01',
+          notes: '옥션·G마켓 통합 ESM 계정 기준 추정치입니다.',
+        }),
+      ],
+    }
+  }
+
+  if (input.channel === 'KAKAO') {
+    const salesRate = input.customSalesFeeRate ?? input.kakaoRate
+    return {
+      channel: 'KAKAO',
+      name: '카카오쇼핑',
+      channelType: 'marketplace',
+      category: 'user_or_estimated',
+      lastVerified: '2026-11-01',
+      disclaimer: '카카오쇼핑·선물하기·톡딜 등 판매 형태에 따라 요율이 다릅니다.',
+      components: [
+        component({
+          code: 'sales_fee',
+          label: '판매수수료 (추정/입력, VAT 별도)',
+          rate: salesRate,
+          vatMode: 'EXCLUDED',
+          verificationStatus: input.customSalesFeeRate == null ? 'ESTIMATED' : 'USER_DEFINED',
+          sourceType: 'estimated',
+          sourceReference: '일반 카테고리 약 8~12% · VAT 별도 · 기본 10%',
+          effectiveFrom: '2026-11-01',
+          notes: '결제·정산 수수료는 판매자센터 약관을 확인하세요.',
         }),
       ],
     }
@@ -150,8 +204,9 @@ export function resolveFeePolicy(input: MarginInput): ChannelFeePolicy {
         }),
         component({
           code: 'payment_fee',
-          label: 'PG 결제수수료 (추정)',
+          label: 'PG 결제수수료 (추정, VAT 별도)',
           rate: paymentRate,
+          vatMode: 'EXCLUDED',
           verificationStatus: input.customPaymentFeeRate == null ? 'ESTIMATED' : 'USER_DEFINED',
           sourceType: 'estimated',
           sourceReference: '국내 PG 일반 구간 약 2.5~3.5% · 기본 3.3%',
@@ -200,14 +255,28 @@ export function resolveFeePolicy(input: MarginInput): ChannelFeePolicy {
   }
 }
 
-export function feeRates(policy: ChannelFeePolicy): { sales: number; payment: number; fixed: number } {
+function componentVatMode(componentMode: VatMode, userMode: VatMode): VatMode {
+  if (userMode !== 'IGNORE') return userMode
+  return componentMode
+}
+
+export function effectiveRate(rate: number, vatMode: VatMode): number {
+  if (vatMode === 'EXCLUDED') return rate * (1 + VAT_RATE)
+  return rate
+}
+
+export function feeRates(
+  policy: ChannelFeePolicy,
+  feeVatMode: VatMode = 'IGNORE',
+): { sales: number; payment: number; fixed: number } {
   let sales = 0
   let payment = 0
   let fixed = 0
   for (const c of policy.components) {
     fixed += c.fixedFee
-    if (c.code === 'npay' || c.code === 'payment_fee') payment += c.rate
-    else sales += c.rate
+    const rate = effectiveRate(c.rate, componentVatMode(c.vatMode, feeVatMode))
+    if (c.code === 'npay' || c.code === 'payment_fee') payment += rate
+    else sales += rate
   }
   return { sales, payment, fixed }
 }
@@ -220,6 +289,10 @@ export function channelLabel(code: ChannelCode): string {
       return '쿠팡'
     case 'ELEVEN_ST':
       return '11번가'
+    case 'GMARKET':
+      return 'G마켓 (ESM)'
+    case 'KAKAO':
+      return '카카오쇼핑'
     case 'OWN_STORE':
       return '자사몰 (D2C)'
     default:

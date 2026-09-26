@@ -1,8 +1,18 @@
-import { emptyInput, type ChannelCode, type MarginInput } from '../engine'
+import { emptyInput, type ChannelCode, type MarginInput, type VatMode } from '../engine'
 
 const STORAGE_KEY = 'margin-genie:input:v1'
 
-const CHANNELS: ChannelCode[] = ['NAVER_SMARTSTORE', 'COUPANG', 'ELEVEN_ST', 'OWN_STORE', 'CUSTOM']
+const CHANNELS: ChannelCode[] = [
+  'NAVER_SMARTSTORE',
+  'COUPANG',
+  'ELEVEN_ST',
+  'GMARKET',
+  'KAKAO',
+  'OWN_STORE',
+  'CUSTOM',
+]
+
+const VAT_MODES: VatMode[] = ['INCLUDED', 'EXCLUDED', 'IGNORE']
 
 function isRecord(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v)
@@ -26,6 +36,16 @@ export function sanitizeMarginInput(parsed: unknown, fallback: MarginInput): Mar
     otherCost: asNumber(parsed.otherCost, fallback.otherCost),
     coupangCategoryRate: asNumber(parsed.coupangCategoryRate, base.coupangCategoryRate),
     elevenstRate: asNumber(parsed.elevenstRate, base.elevenstRate),
+    gmarketRate: asNumber(parsed.gmarketRate, base.gmarketRate),
+    kakaoRate: asNumber(parsed.kakaoRate, base.kakaoRate),
+    priceVatMode:
+      typeof parsed.priceVatMode === 'string' && VAT_MODES.includes(parsed.priceVatMode as VatMode)
+        ? (parsed.priceVatMode as VatMode)
+        : base.priceVatMode,
+    feeVatMode:
+      typeof parsed.feeVatMode === 'string' && VAT_MODES.includes(parsed.feeVatMode as VatMode)
+        ? (parsed.feeVatMode as VatMode)
+        : base.feeVatMode,
     discountRate: asNumber(parsed.discountRate, base.discountRate),
     couponAmount: asNumber(parsed.couponAmount, base.couponAmount),
     advertisingPerOrder: asNumber(parsed.advertisingPerOrder, base.advertisingPerOrder),

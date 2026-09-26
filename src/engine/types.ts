@@ -1,7 +1,16 @@
 export const ENGINE_VERSION = '1.0.0' as const
-export const POLICY_VERSION = '2026-10' as const
+export const POLICY_VERSION = '2026-11' as const
 
-export type ChannelCode = 'NAVER_SMARTSTORE' | 'COUPANG' | 'ELEVEN_ST' | 'OWN_STORE' | 'CUSTOM'
+export const VAT_RATE = 0.1 as const
+
+export type ChannelCode =
+  | 'NAVER_SMARTSTORE'
+  | 'COUPANG'
+  | 'ELEVEN_ST'
+  | 'GMARKET'
+  | 'KAKAO'
+  | 'OWN_STORE'
+  | 'CUSTOM'
 
 export type VerificationStatus = 'VERIFIED' | 'ESTIMATED' | 'USER_DEFINED' | 'EXPIRED' | 'UNKNOWN'
 
@@ -54,6 +63,10 @@ export interface MarginInput {
   npayGrade: NpayGrade
   coupangCategoryRate: number
   elevenstRate: number
+  gmarketRate: number
+  kakaoRate: number
+  priceVatMode: VatMode
+  feeVatMode: VatMode
   discountRate: number
   couponAmount: number
   couponBearer: PromoBearer
@@ -87,6 +100,8 @@ export interface MarginResult {
   engineVersion: typeof ENGINE_VERSION
   policyVersion: typeof POLICY_VERSION
   listPrice: number
+  grossListPrice: number | null
+  priceVatAmount: number | null
   netSales: number
   sellerDiscount: number
   sellerCoupon: number
@@ -133,6 +148,10 @@ export function emptyInput(): MarginInput {
     npayGrade: 'GENERAL',
     coupangCategoryRate: 0.108,
     elevenstRate: 0.11,
+    gmarketRate: 0.13,
+    kakaoRate: 0.1,
+    priceVatMode: 'INCLUDED',
+    feeVatMode: 'IGNORE',
     discountRate: 0,
     couponAmount: 0,
     couponBearer: 'SELLER',

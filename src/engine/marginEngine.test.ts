@@ -164,6 +164,56 @@ describe('margin engine', () => {
     expect(result.salesFee).toBe(0)
   })
 
+  it('calculates kakao and gmarket estimated fees', () => {
+    const kakao = calculateMargin({
+      ...emptyInput(),
+      channel: 'KAKAO',
+      listPrice: 50000,
+      productCost: 15000,
+      advertisingPerOrder: 0,
+    })
+    const gmarket = calculateMargin({
+      ...emptyInput(),
+      channel: 'GMARKET',
+      listPrice: 50000,
+      productCost: 15000,
+      advertisingPerOrder: 0,
+    })
+    expect(kakao.feePolicy.channel).toBe('KAKAO')
+    expect(gmarket.feePolicy.channel).toBe('GMARKET')
+    expect(kakao.salesFee).toBeGreaterThan(50000 * 0.1)
+    expect(gmarket.salesFee).toBeGreaterThan(50000 * 0.13)
+  })
+
+  it('adds vat to excluded marketplace fee rates by default', () => {
+    const coupang = calculateMargin({
+      ...emptyInput(),
+      channel: 'COUPANG',
+      coupangCategoryRate: 0.1,
+      listPrice: 100000,
+      productCost: 30000,
+      advertisingPerOrder: 0,
+      feeVatMode: 'IGNORE',
+    })
+    const custom = calculateMargin({
+      ...emptyInput(),
+      channel: 'CUSTOM',
+      customSalesFeeRate: 0.1,
+      listPrice: 100000,
+      productCost: 30000,
+      advertisingPerOrder: 0,
+    })
+    expect(coupang.salesFee).toBe(11000)
+    expect(custom.salesFee).toBe(10000)
+  })
+
+  it('shows gross list price when priceVatMode is EXCLUDED', () => {
+    const result = calculateMargin({ ...emptyInput(), listPrice: 100000, priceVatMode: 'EXCLUDED' })
+    expect(result.grossListPrice).toBe(110000)
+    expect(result.priceVatAmount).toBe(10000)
+    expect(result.warnings.some((w) => w.includes('공급가'))).toBe(true)
+  })
+
   it('returns null target price when fees exceed capacity', () => {
     const result = calculateMargin({
       ...emptyInput(),
