@@ -1,13 +1,17 @@
-import { krw, pct, riskLabel, type MarginResult } from '../engine'
+import { channelLabel, krw, pct, riskLabel, type ChannelCode, type MarginResult } from '../engine'
 import { downloadChannelCompareCsv } from '../export/channelCompareCsv'
 
 type ChannelComparePanelProps = {
   rows: MarginResult[]
+  allChannels?: ChannelCode[]
+  selectedChannels?: ChannelCode[]
+  onToggleChannel?: (code: ChannelCode) => void
 }
 
-export function ChannelComparePanel({ rows }: ChannelComparePanelProps) {
+export function ChannelComparePanel({ rows, allChannels, selectedChannels, onToggleChannel }: ChannelComparePanelProps) {
   if (!rows.length) return null
   const best = rows.reduce((a, b) => (a.contributionProfit > b.contributionProfit ? a : b))
+  const showToggles = allChannels && selectedChannels && onToggleChannel
 
   return (
     <div className="mt-8 rounded-3xl border border-line bg-paper p-6">
@@ -24,13 +28,33 @@ export function ChannelComparePanel({ rows }: ChannelComparePanelProps) {
           CSV 내보내기
         </button>
       </div>
+      {showToggles ? (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {allChannels.map((code) => {
+            const on = selectedChannels.includes(code)
+            return (
+              <button
+                key={code}
+                type="button"
+                className={`rounded-full border px-3 py-1 text-xs font-medium ${
+                  on ? 'border-ink bg-ink text-white' : 'border-line text-black/45 hover:bg-canvas'
+                }`}
+                onClick={() => onToggleChannel(code)}
+              >
+                {channelLabel(code)}
+              </button>
+            )
+          })}
+        </div>
+      ) : null}
       <div className="mt-4 overflow-x-auto">
-        <table className="w-full min-w-[520px] text-left text-sm">
+        <table className="w-full min-w-[640px] text-left text-sm">
           <thead className="text-black/45">
             <tr>
               <th className="py-2">채널</th>
               <th>공헌이익</th>
               <th>실마진</th>
+              <th>판매수수료</th>
               <th>손익분기</th>
               <th>판정</th>
             </tr>
@@ -46,6 +70,7 @@ export function ChannelComparePanel({ rows }: ChannelComparePanelProps) {
                   </td>
                   <td className="tabular-nums">{krw(row.contributionProfit)}</td>
                   <td>{pct(row.marginRate)}</td>
+                  <td className="tabular-nums">{krw(row.salesFee + row.paymentFee)}</td>
                   <td className="tabular-nums">{row.breakEvenPrice ? krw(row.breakEvenPrice) : '—'}</td>
                   <td>{riskLabel(row.risk).text}</td>
                 </tr>

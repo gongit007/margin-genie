@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { ChannelComparePanel } from './components/ChannelComparePanel'
+import { ChannelInsightPanel } from './components/ChannelInsightPanel'
 import { FeeRateSlider } from './components/FeeRateSlider'
 import { MoneyField } from './components/MoneyField'
 import { ScenarioComparePanel } from './components/ScenarioComparePanel'
@@ -29,10 +30,15 @@ import {
   type VatMode,
 } from './engine'
 import { copyShareUrl, readShareInputFromHash } from './share/inputShare'
+import { defaultCompareChannels, loadCompareChannels, saveCompareChannels } from './storage/compareChannelStorage'
+import { downloadFullBackup, importFullBackupJson } from './storage/fullBackup'
 import { loadMarginInput, saveMarginInput } from './storage/marginInputStorage'
+
+const ALL_COMPARE_CHANNELS = defaultCompareChannels()
 
 const DEMO: MarginInput = {
   ...emptyInput(),
+  productName: '니트 가디건',
   listPrice: 89000,
   productCost: 32000,
   shippingCost: 3000,
@@ -53,6 +59,10 @@ export default function App() {
   const [menu, setMenu] = useState(false)
   const [input, setInput] = useState<MarginInput>(loadInitialInput)
   const [shareMessage, setShareMessage] = useState('')
+  const [selectedCompareChannels, setSelectedCompareChannels] = useState<ChannelCode[]>(() =>
+    loadCompareChannels(ALL_COMPARE_CHANNELS),
+  )
+  const [backupMessage, setBackupMessage] = useState('')
   const patch = (partial: Partial<MarginInput>) => setInput((prev) => ({ ...prev, ...partial }))
 
   const handleShare = async () => {
@@ -63,16 +73,21 @@ export default function App() {
   useEffect(() => {
     saveMarginInput(input)
   }, [input])
+  useEffect(() => {
+    saveCompareChannels(selectedCompareChannels)
+  }, [selectedCompareChannels])
+
+  const toggleCompareChannel = (code: ChannelCode) => {
+    setSelectedCompareChannels((prev) => {
+      if (prev.includes(code)) {
+        return prev.length <= 1 ? prev : prev.filter((c) => c !== code)
+      }
+      return [...prev, code]
+    })
+  }
+
   const result = useMemo(() => calculateMargin(input), [input])
-  const compareChannelCodes: ChannelCode[] = [
-    'NAVER_SMARTSTORE',
-    'COUPANG',
-    'ELEVEN_ST',
-    'GMARKET',
-    'KAKAO',
-    'OWN_STORE',
-  ]
-  const rows = useMemo(() => compareChannels(input, compareChannelCodes), [input])
+  const rows = useMemo(() => compareChannels(input, selectedCompareChannels), [input, selectedCompareChannels])
   const best = rows.reduce((a, b) => (a.contributionProfit > b.contributionProfit ? a : b))
 
   return (
@@ -144,7 +159,7 @@ export default function App() {
             </div>
             <div className="mt-14 grid gap-8 border-t border-line pt-8 sm:grid-cols-3">
               <Stat n="Engine" l="숫자가 LLM이 아님" />
-              <Stat n="6+" l="스마트스토어 · 쿠팡 · 11번가 · G마켓 · 카카오 · 자사몰" />
+              <Stat n="8+" l="주요 오픈마켓 + 자사몰" />
               <Stat n="출처" l="VERIFIED / ESTIMATED 구분" />
             </div>
 
@@ -152,7 +167,7 @@ export default function App() {
               <p className="text-xs font-semibold tracking-[0.16em] text-black/40">CHANNEL MARGIN · LIVE</p>
               <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
                 <div>
-                  <p className="text-lg font-semibold">샘플 니트 가디건</p>
+                  <p className="text-lg font-semibold">{input.productName.trim() || '샘플 상품'}</p>
                   <p className="text-3xl font-semibold tabular-nums">{krw(input.listPrice)}</p>
                   <p className="text-sm text-black/50">원가 {krw(input.productCost)}</p>
                   <a
@@ -166,7 +181,7 @@ export default function App() {
                   아래 채널 마진은 위 숫자와 <strong>같은 계산 엔진</strong>으로 실시간 갱신됩니다.
                 </p>
               </div>
-              <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 {rows.map((row) => {
                   const win = row.feePolicy.channel === best.feePolicy.channel
                   return (
@@ -257,7 +272,22 @@ export default function App() {
           onShare={handleShare}
           shareMessage={shareMessage}
           onReset={() => setInput({ ...DEMO })}
-          compareChannelCodes={compareChannelCodes}
+          selectedCompareChannels={selectedCompareChannels}
+          allCompareChannels={ALL_COMPARE_CHANNELS}
+          onToggleCompareChannel={toggleCompareChannel}
+          backupMessage={backupMessage}
+          onFullBackup={() => downloadFullBackup(input, selectedCompareChannels)}
+          onFullImport={async (file) => {
+            try {
+              const text = await file.text()
+              const restored = importFullBackupJson(text)
+              setInput(restored.input)
+              setSelectedCompareChannels(restored.compareChannels)
+              setBackupMessage(`백업 복원 완료 · 시나리오 ${restored.scenarioCount}개`)
+            } catch {
+              setBackupMessage('백업 파일을 읽지 못했습니다.')
+            }
+          }}
         />
 
         <section className="border-t border-line bg-paper py-20">
@@ -291,8 +321,8 @@ export default function App() {
                 <p className="mt-2 font-serif text-4xl">₩0</p>
                 <ul className="mt-4 space-y-2 text-sm text-black/65">
                   <li>빠른 마진 계산</li>
-                  <li>채널 비교 · 역산 · 시나리오 저장</li>
-                  <li>CSV · PDF/인쇄 · 링크 공유</li>
+                  <li>8채널 비교 · 채널 추천 · 역산 · 시나리오</li>
+                  <li>CSV · PDF/인쇄 · 링크 공유 · 전체 백업</li>
                   <li>수수료 출처 표시</li>
                 </ul>
                 <a href="#calculator" className="mt-6 inline-block rounded-full bg-brand px-5 py-2 text-sm font-semibold">
@@ -319,7 +349,10 @@ export default function App() {
               아닙니다. 랜딩의 정보 구조(문제 → 4단계 → 채널 비교 → 계산)를 벤치했고, 수수료 출처·공헌이익 용어·결정론 엔진은 마진지니의 차별점입니다.
             </Faq>
             <Faq q="수수료가 공식 확정값인가요?">
-              스마트스토어 판매수수료·Npay는 고객센터 FAQ 기준으로 VERIFIED입니다. 쿠팡·11번가는 ESTIMATED이며 판매자센터 값으로 덮어쓰세요.
+              스마트스토어 판매수수료·Npay는 고객센터 FAQ 기준으로 VERIFIED입니다. 쿠팡·11번가·G마켓·옥션·카카오·롯데ON은 ESTIMATED이며 판매자센터 값으로 덮어쓰세요.
+            </Faq>
+            <Faq q="VAT 모드는 어떻게 쓰나요?">
+              판매가·원가를 공급가(VAT 별도)로 넣을 때는 상세 설정에서 VAT 별도를 선택하세요. 수수료는 기본적으로 채널 정책(VAT 포함/별도)을 따릅니다.
             </Faq>
             <Faq q="AI가 마진을 계산하나요?">
               하지 않습니다. Margin Engine이 계산하고, 설명 레이어는 그 결과만 읽습니다.
@@ -365,7 +398,12 @@ function Calculator({
   onShare,
   shareMessage,
   onReset,
-  compareChannelCodes,
+  selectedCompareChannels,
+  allCompareChannels,
+  onToggleCompareChannel,
+  backupMessage,
+  onFullBackup,
+  onFullImport,
 }: {
   input: MarginInput
   patch: (p: Partial<MarginInput>) => void
@@ -375,7 +413,12 @@ function Calculator({
   onShare: () => void
   shareMessage: string
   onReset: () => void
-  compareChannelCodes: ChannelCode[]
+  selectedCompareChannels: ChannelCode[]
+  allCompareChannels: ChannelCode[]
+  onToggleCompareChannel: (code: ChannelCode) => void
+  backupMessage: string
+  onFullBackup: () => void
+  onFullImport: (file: File) => void | Promise<void>
 }) {
   const insight = interpret(result, input)
   const risk = riskLabel(result.risk)
@@ -390,7 +433,9 @@ function Calculator({
     input.channel === 'COUPANG' ||
     input.channel === 'ELEVEN_ST' ||
     input.channel === 'GMARKET' ||
-    input.channel === 'KAKAO'
+    input.channel === 'AUCTION' ||
+    input.channel === 'KAKAO' ||
+    input.channel === 'LOTTEON'
   const ladder = useMemo(() => {
     const mid = input.listPrice
     const prices = [mid - 20000, mid - 8000, mid, mid + 10000, mid + 20000].filter((p) => p >= 1000)
@@ -410,7 +455,9 @@ function Calculator({
     'COUPANG',
     'ELEVEN_ST',
     'GMARKET',
+    'AUCTION',
     'KAKAO',
+    'LOTTEON',
     'OWN_STORE',
     'CUSTOM',
   ]
@@ -451,6 +498,16 @@ function Calculator({
           <div className="rounded-3xl border border-line bg-paper p-6">
             <h3 className="font-semibold">빠른 계산</h3>
             <div className="mt-4 grid gap-3">
+              <label className="block">
+                <span className="text-sm font-medium">상품명 (선택)</span>
+                <input
+                  className="mt-1 w-full rounded-xl border border-line bg-white px-3 py-2.5"
+                  value={input.productName}
+                  placeholder="예: 니트 가디건"
+                  maxLength={80}
+                  onChange={(e) => patch({ productName: e.target.value })}
+                />
+              </label>
               <MoneyField label="판매가" value={input.listPrice} onChange={(listPrice) => patch({ listPrice })} />
               <MoneyField label="상품 원가" value={input.productCost} onChange={(productCost) => patch({ productCost })} />
               <MoneyField label="배송비" value={input.shippingCost} onChange={(shippingCost) => patch({ shippingCost })} />
@@ -574,6 +631,15 @@ function Calculator({
                     onChange={(gmarketRate) => patch({ gmarketRate })}
                   />
                 ) : null}
+                {input.channel === 'AUCTION' ? (
+                  <FeeRateSlider
+                    label="옥션 수수료 추정"
+                    value={input.auctionRate}
+                    min={8}
+                    max={18}
+                    onChange={(auctionRate) => patch({ auctionRate })}
+                  />
+                ) : null}
                 {input.channel === 'KAKAO' ? (
                   <FeeRateSlider
                     label="카카오쇼핑 수수료 추정"
@@ -581,6 +647,15 @@ function Calculator({
                     min={5}
                     max={15}
                     onChange={(kakaoRate) => patch({ kakaoRate })}
+                  />
+                ) : null}
+                {input.channel === 'LOTTEON' ? (
+                  <FeeRateSlider
+                    label="롯데ON 수수료 추정"
+                    value={input.lotteonRate}
+                    min={6}
+                    max={16}
+                    onChange={(lotteonRate) => patch({ lotteonRate })}
                   />
                 ) : null}
                 <label className="block">
@@ -794,7 +869,13 @@ function Calculator({
           </div>
         </div>
 
-        <ChannelComparePanel rows={compareChannels(input, compareChannelCodes)} />
+        <ChannelComparePanel
+          rows={compareChannels(input, selectedCompareChannels)}
+          allChannels={allCompareChannels}
+          selectedChannels={selectedCompareChannels}
+          onToggleChannel={onToggleCompareChannel}
+        />
+        <ChannelInsightPanel rows={compareChannels(input, selectedCompareChannels)} activeChannel={input.channel} />
 
         <div className="mt-8 rounded-3xl border border-line bg-paper p-6">
           <h3 className="font-semibold">가격을 바꿔보세요</h3>
@@ -834,6 +915,33 @@ function Calculator({
         <div className="mt-8">
           <ScenarioPanel input={input} onLoad={onLoad} onMutate={() => setScenarioRefreshKey((k) => k + 1)} />
           <ScenarioComparePanel refreshKey={scenarioRefreshKey} />
+          <div className="mt-4 rounded-3xl border border-line bg-paper p-6">
+            <h3 className="font-semibold">전체 백업</h3>
+            <p className="mt-1 text-xs text-black/50">현재 입력·시나리오·비교 채널 설정을 한 JSON 파일로 저장합니다.</p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <button
+                type="button"
+                className="rounded-full border border-line px-3 py-1 text-xs font-medium hover:bg-canvas"
+                onClick={onFullBackup}
+              >
+                전체 백업
+              </button>
+              <label className="cursor-pointer rounded-full border border-line px-3 py-1 text-xs font-medium hover:bg-canvas">
+                전체 복원
+                <input
+                  type="file"
+                  accept="application/json,.json"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) void onFullImport(file)
+                    e.target.value = ''
+                  }}
+                />
+              </label>
+            </div>
+            {backupMessage ? <p className="mt-2 text-xs text-black/55">{backupMessage}</p> : null}
+          </div>
         </div>
 
         <div className="mt-6 grid gap-6 lg:grid-cols-2">

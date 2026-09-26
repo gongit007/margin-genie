@@ -13,6 +13,7 @@ function row(cells: (string | number | null | undefined)[]): string {
 export function buildMarginCsv(input: MarginInput, result: MarginResult): string {
   const lines: string[] = []
   lines.push(row(['마진지니 계산 결과']))
+  if (input.productName.trim()) lines.push(row(['상품명', input.productName.trim()]))
   lines.push(row(['엔진', result.engineVersion]))
   lines.push(row(['정책', result.policyVersion]))
   lines.push(row(['채널', channelLabel(input.channel)]))

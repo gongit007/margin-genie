@@ -156,6 +156,31 @@ export function resolveFeePolicy(input: MarginInput): ChannelFeePolicy {
     }
   }
 
+  if (input.channel === 'AUCTION') {
+    const salesRate = input.customSalesFeeRate ?? input.auctionRate
+    return {
+      channel: 'AUCTION',
+      name: '옥션 (ESM)',
+      channelType: 'marketplace',
+      category: 'user_or_estimated',
+      lastVerified: '2026-12-01',
+      disclaimer: '카테고리·프로모션·ESM PLUS 요율이 다를 수 있습니다. 판매자센터 정산을 확인하세요.',
+      components: [
+        component({
+          code: 'sales_fee',
+          label: '판매수수료 (추정/입력, VAT 별도)',
+          rate: salesRate,
+          vatMode: 'EXCLUDED',
+          verificationStatus: input.customSalesFeeRate == null ? 'ESTIMATED' : 'USER_DEFINED',
+          sourceType: 'estimated',
+          sourceReference: '일반 카테고리 약 10~15% · VAT 별도 · 기본 13%',
+          effectiveFrom: '2026-12-01',
+          notes: 'G마켓·옥션 통합 ESM 계정 기준 추정치입니다.',
+        }),
+      ],
+    }
+  }
+
   if (input.channel === 'KAKAO') {
     const salesRate = input.customSalesFeeRate ?? input.kakaoRate
     return {
@@ -176,6 +201,31 @@ export function resolveFeePolicy(input: MarginInput): ChannelFeePolicy {
           sourceReference: '일반 카테고리 약 8~12% · VAT 별도 · 기본 10%',
           effectiveFrom: '2026-11-01',
           notes: '결제·정산 수수료는 판매자센터 약관을 확인하세요.',
+        }),
+      ],
+    }
+  }
+
+  if (input.channel === 'LOTTEON') {
+    const salesRate = input.customSalesFeeRate ?? input.lotteonRate
+    return {
+      channel: 'LOTTEON',
+      name: '롯데ON',
+      channelType: 'marketplace',
+      category: 'user_or_estimated',
+      lastVerified: '2026-12-01',
+      disclaimer: '카테고리·입점 유형·프로모션에 따라 요율이 다릅니다. 롯데ON 판매자센터를 확인하세요.',
+      components: [
+        component({
+          code: 'sales_fee',
+          label: '판매수수료 (추정/입력, VAT 별도)',
+          rate: salesRate,
+          vatMode: 'EXCLUDED',
+          verificationStatus: input.customSalesFeeRate == null ? 'ESTIMATED' : 'USER_DEFINED',
+          sourceType: 'estimated',
+          sourceReference: '일반 카테고리 약 8~13% · VAT 별도 · 기본 11%',
+          effectiveFrom: '2026-12-01',
+          notes: '롯데백화점·마트 연동 등 입점 형태에 따라 달라질 수 있습니다.',
         }),
       ],
     }
@@ -291,8 +341,12 @@ export function channelLabel(code: ChannelCode): string {
       return '11번가'
     case 'GMARKET':
       return 'G마켓 (ESM)'
+    case 'AUCTION':
+      return '옥션 (ESM)'
     case 'KAKAO':
       return '카카오쇼핑'
+    case 'LOTTEON':
+      return '롯데ON'
     case 'OWN_STORE':
       return '자사몰 (D2C)'
     default:

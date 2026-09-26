@@ -1,4 +1,40 @@
-import type { MarginInput, MarginResult, RiskLevel } from './types'
+import { channelLabel } from './feeEngine'
+import type { ChannelCode, MarginInput, MarginResult, RiskLevel } from './types'
+
+export function interpretChannels(
+  rows: MarginResult[],
+  activeChannel: ChannelCode,
+): { headline: string; body: string; actions: string[] } | null {
+  if (rows.length < 2) return null
+  const sorted = [...rows].sort((a, b) => b.contributionProfit - a.contributionProfit)
+  const best = sorted[0]
+  const worst = sorted[sorted.length - 1]
+  const active = rows.find((r) => r.feePolicy.channel === activeChannel)
+  const spread = best.contributionProfit - worst.contributionProfit
+
+  if (best.feePolicy.channel === activeChannel) {
+    return {
+      headline: `선택 채널(${best.feePolicy.name})이 가장 유리합니다.`,
+      body: `개당 공헌이익 ${best.contributionProfit.toLocaleString('ko-KR')}원으로 비교 ${rows.length}개 채널 중 최고입니다.`,
+      actions: compact([
+        spread > 0 ? `최저 채널(${worst.feePolicy.name})과 ${spread.toLocaleString('ko-KR')}원 차이입니다.` : '',
+        best.marginRate !== null ? `실마진율 ${(best.marginRate * 100).toFixed(1)}%입니다.` : '',
+      ]),
+    }
+  }
+
+  const gap = best.contributionProfit - (active?.contributionProfit ?? 0)
+  return {
+    headline: `${best.feePolicy.name}이(가) ${gap.toLocaleString('ko-KR')}원 더 남습니다.`,
+    body: `현재 ${channelLabel(activeChannel)} 대비 개당 공헌이익이 높습니다. 동일 판매가·원가 조건 기준입니다.`,
+    actions: compact([
+      `채널을 ${best.feePolicy.name}(으)로 바꾸면 개당 ${gap.toLocaleString('ko-KR')}원 개선됩니다.`,
+      active?.breakEvenPrice && best.breakEvenPrice
+        ? `손익분기는 ${channelLabel(activeChannel)} ${active.breakEvenPrice.toLocaleString('ko-KR')}원 → ${best.feePolicy.name} ${best.breakEvenPrice.toLocaleString('ko-KR')}원`
+        : '',
+    ]),
+  }
+}
 
 export function interpret(result: MarginResult, input: MarginInput): {
   headline: string

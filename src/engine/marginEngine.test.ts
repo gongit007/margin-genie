@@ -164,25 +164,20 @@ describe('margin engine', () => {
     expect(result.salesFee).toBe(0)
   })
 
-  it('calculates kakao and gmarket estimated fees', () => {
-    const kakao = calculateMargin({
-      ...emptyInput(),
-      channel: 'KAKAO',
-      listPrice: 50000,
-      productCost: 15000,
-      advertisingPerOrder: 0,
-    })
-    const gmarket = calculateMargin({
-      ...emptyInput(),
-      channel: 'GMARKET',
-      listPrice: 50000,
-      productCost: 15000,
-      advertisingPerOrder: 0,
-    })
+  it('calculates open market estimated fees including auction and lotteon', () => {
+    const base = { listPrice: 50000, productCost: 15000, advertisingPerOrder: 0 }
+    const kakao = calculateMargin({ ...emptyInput(), ...base, channel: 'KAKAO' })
+    const gmarket = calculateMargin({ ...emptyInput(), ...base, channel: 'GMARKET' })
+    const auction = calculateMargin({ ...emptyInput(), ...base, channel: 'AUCTION' })
+    const lotteon = calculateMargin({ ...emptyInput(), ...base, channel: 'LOTTEON' })
     expect(kakao.feePolicy.channel).toBe('KAKAO')
     expect(gmarket.feePolicy.channel).toBe('GMARKET')
+    expect(auction.feePolicy.channel).toBe('AUCTION')
+    expect(lotteon.feePolicy.channel).toBe('LOTTEON')
     expect(kakao.salesFee).toBeGreaterThan(50000 * 0.1)
     expect(gmarket.salesFee).toBeGreaterThan(50000 * 0.13)
+    expect(auction.salesFee).toBeGreaterThan(50000 * 0.13)
+    expect(lotteon.salesFee).toBeGreaterThan(50000 * 0.11)
   })
 
   it('adds vat to excluded marketplace fee rates by default', () => {

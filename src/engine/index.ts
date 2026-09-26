@@ -11,5 +11,5 @@ export type {
 } from './types'
 export { calculateMargin, compareChannels, priceLadder, validateInput } from './marginEngine'
 export { channelLabel, resolveFeePolicy } from './feeEngine'
-export { interpret, riskLabel } from './interpret'
+export { interpret, interpretChannels, riskLabel } from './interpret'
 export { krw, pct, won } from './money'

@@ -7,7 +7,9 @@ const CHANNELS: ChannelCode[] = [
   'COUPANG',
   'ELEVEN_ST',
   'GMARKET',
+  'AUCTION',
   'KAKAO',
+  'LOTTEON',
   'OWN_STORE',
   'CUSTOM',
 ]
@@ -37,7 +39,9 @@ export function sanitizeMarginInput(parsed: unknown, fallback: MarginInput): Mar
     coupangCategoryRate: asNumber(parsed.coupangCategoryRate, base.coupangCategoryRate),
     elevenstRate: asNumber(parsed.elevenstRate, base.elevenstRate),
     gmarketRate: asNumber(parsed.gmarketRate, base.gmarketRate),
+    auctionRate: asNumber(parsed.auctionRate, base.auctionRate),
     kakaoRate: asNumber(parsed.kakaoRate, base.kakaoRate),
+    lotteonRate: asNumber(parsed.lotteonRate, base.lotteonRate),
     priceVatMode:
       typeof parsed.priceVatMode === 'string' && VAT_MODES.includes(parsed.priceVatMode as VatMode)
         ? (parsed.priceVatMode as VatMode)
@@ -60,6 +64,7 @@ export function sanitizeMarginInput(parsed: unknown, fallback: MarginInput): Mar
     monthlyFixedCost: asNumber(parsed.monthlyFixedCost, base.monthlyFixedCost),
     targetMonthlyProfit: asNumber(parsed.targetMonthlyProfit, base.targetMonthlyProfit),
     targetUnitProfit: asNumber(parsed.targetUnitProfit, base.targetUnitProfit),
+    productName: typeof parsed.productName === 'string' ? parsed.productName.slice(0, 80) : fallback.productName,
     channel: typeof channel === 'string' && CHANNELS.includes(channel as ChannelCode) ? (channel as ChannelCode) : fallback.channel,
     customSalesFeeRate:
       parsed.customSalesFeeRate === null

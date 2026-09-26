@@ -43,6 +43,7 @@ export function buildMarginReportHtml(
   @media print{body{margin:16px}}
 </style></head><body>
   <h1>마진지니 계산 리포트</h1>
+  ${input.productName.trim() ? `<p class="meta">${escHtml(input.productName.trim())}</p>` : ''}
   <p class="meta">${escHtml(new Date().toLocaleString('ko-KR'))} · 엔진 ${escHtml(result.engineVersion)} · ${escHtml(channelLabel(input.channel))}</p>
   <p><span class="badge">${escHtml(risk.text)}</span></p>
   <p><strong>${escHtml(insight.headline)}</strong><br/>${escHtml(insight.body)}</p>

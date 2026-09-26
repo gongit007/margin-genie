@@ -1,5 +1,5 @@
 export const ENGINE_VERSION = '1.0.0' as const
-export const POLICY_VERSION = '2026-11' as const
+export const POLICY_VERSION = '2026-13' as const
 
 export const VAT_RATE = 0.1 as const
 
@@ -8,7 +8,9 @@ export type ChannelCode =
   | 'COUPANG'
   | 'ELEVEN_ST'
   | 'GMARKET'
+  | 'AUCTION'
   | 'KAKAO'
+  | 'LOTTEON'
   | 'OWN_STORE'
   | 'CUSTOM'
 
@@ -51,6 +53,7 @@ export interface ChannelFeePolicy {
 }
 
 export interface MarginInput {
+  productName: string
   listPrice: number
   productCost: number
   packagingCost: number
@@ -64,7 +67,9 @@ export interface MarginInput {
   coupangCategoryRate: number
   elevenstRate: number
   gmarketRate: number
+  auctionRate: number
   kakaoRate: number
+  lotteonRate: number
   priceVatMode: VatMode
   feeVatMode: VatMode
   discountRate: number
@@ -136,6 +141,7 @@ export interface MarginResult {
 
 export function emptyInput(): MarginInput {
   return {
+    productName: '',
     listPrice: 29900,
     productCost: 10000,
     packagingCost: 0,
@@ -149,7 +155,9 @@ export function emptyInput(): MarginInput {
     coupangCategoryRate: 0.108,
     elevenstRate: 0.11,
     gmarketRate: 0.13,
+    auctionRate: 0.13,
     kakaoRate: 0.1,
+    lotteonRate: 0.11,
     priceVatMode: 'INCLUDED',
     feeVatMode: 'IGNORE',
     discountRate: 0,
