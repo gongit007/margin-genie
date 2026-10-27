@@ -122,9 +122,14 @@ export default function App() {
             <span className="grid h-8 w-8 place-items-center rounded-lg bg-brand text-sm font-bold">G</span>
             마진지니
           </a>
-          <a href="#calculator" className="rounded-full bg-ink px-4 py-2 text-sm text-white">
-            {isProActive(proSession) ? 'Pro 사용 중' : '무료로 시작 →'}
-          </a>
+          <div className="flex items-center gap-3">
+            <a href="/intelligence" className="text-sm text-subtle hover:text-ink">
+              Intelligence
+            </a>
+            <a href="#calculator" className="rounded-full bg-ink px-4 py-2 text-sm text-white">
+              {isProActive(proSession) ? 'Pro 사용 중' : '무료로 시작 →'}
+            </a>
+          </div>
         </div>
       </header>
 
@@ -140,6 +145,7 @@ export default function App() {
               ['#problem', '01 문제'],
               ['#steps', '02 4단계'],
               ['#calculator', '03 계산기'],
+              ['/intelligence', 'Intelligence'],
               ['#pro', '04 Pro'],
               ['#pricing', '05 요금'],
               ['#faq', '06 FAQ'],
