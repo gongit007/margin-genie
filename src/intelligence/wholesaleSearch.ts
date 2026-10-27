@@ -1,3 +1,5 @@
+import { fetchWholesaleSearch } from './adapters/wholesaleAdapter'
+import { extractModelFromText, extractQuantityFromText } from './normalizer'
 import { createProductEntity } from './productEntity'
 import { matchListing, isCompetitiveMatch } from './matchingEngine'
 import { lookupDomemeProduct } from './supplierStub'
@@ -10,6 +12,7 @@ import type {
   SupplierProduct,
   WholesaleListing,
   WholesalePlatformCode,
+  WholesaleSearchHit,
   WholesaleSearchResult,
 } from './types'
 
@@ -55,6 +58,65 @@ function anchorListingFromProduct(product: MyProduct): WholesaleListing {
   }
 }
 
+function listingFromSearchHit(hit: WholesaleSearchHit): WholesaleListing {
+  const raw: RawListingInput = {
+    title: hit.title,
+    model: extractModelFromText(hit.title) ?? undefined,
+    quantity: extractQuantityFromText(hit.title) ?? undefined,
+    supplierItemCode: hit.itemCode,
+    sourceUrl: hit.listingUrl,
+  }
+  return {
+    id: `ws-live-${hit.platform}-${hit.itemCode}`,
+    platform: hit.platform,
+    discoveryStatus: 'FOUND',
+    sellerName: hit.supplierName,
+    itemCode: hit.itemCode,
+    title: hit.title,
+    wholesalePrice: hit.wholesalePrice,
+    shippingFee: hit.shippingFee,
+    effectivePrice: eff(hit.wholesalePrice, hit.shippingFee),
+    listingUrl: hit.listingUrl,
+    capturedAt: new Date().toISOString(),
+    raw,
+  }
+}
+
+function isSameListingAsAnchor(listing: WholesaleListing, product: MyProduct): boolean {
+  if (listing.itemCode && listing.itemCode === product.itemCode) return true
+  if (
+    listing.platform === product.platform &&
+    listing.sellerName &&
+    listing.sellerName === product.supplierName &&
+    listing.itemCode === product.itemCode
+  ) {
+    return true
+  }
+  return false
+}
+
+function dedupeListings(listings: WholesaleListing[]): WholesaleListing[] {
+  const seen = new Set<string>()
+  const out: WholesaleListing[] = []
+  for (const l of listings) {
+    const key = `${l.platform}:${l.itemCode ?? l.id}`
+    if (seen.has(key)) continue
+    seen.add(key)
+    out.push(l)
+  }
+  return out
+}
+
+function competitorsForPlatform(
+  platform: WholesalePlatformCode,
+  product: MyProduct,
+  liveByPlatform: Partial<Record<WholesalePlatformCode, WholesaleListing[]>>,
+): WholesaleListing[] {
+  const live = (liveByPlatform[platform] ?? []).filter((l) => !isSameListingAsAnchor(l, product))
+  if (live.length) return dedupeListings(live)
+  return stubWholesaleCompetitors(platform).filter((l) => !isSameListingAsAnchor(l, product))
+}
+
 function lowestCompetitorEffective(rows: WholesaleSearchResult['rows']): number | null {
   const prices = rows
     .filter(
@@ -68,16 +130,11 @@ function lowestCompetitorEffective(rows: WholesaleSearchResult['rows']): number 
   return prices.length ? Math.min(...prices) : null
 }
 
-function buildStats(
-  rows: WholesaleSearchResult['rows'],
-  activePlatforms: WholesalePlatformCode[],
-): WholesaleSearchResult['stats'] {
+function buildStats(rows: WholesaleSearchResult['rows']): WholesaleSearchResult['stats'] {
   const found = rows.filter((r) => r.listing.discoveryStatus === 'FOUND')
   const byPlatform = WHOLESALE_PLATFORMS.reduce(
     (acc, p) => {
-      acc[p] = activePlatforms.includes(p)
-        ? found.filter((r) => r.listing.platform === p).length
-        : 0
+      acc[p] = found.filter((r) => r.listing.platform === p).length
       return acc
     },
     {} as Record<WholesalePlatformCode, number>,
@@ -92,16 +149,24 @@ function buildStats(
   }
 }
 
-function searchForProduct(product: MyProduct, anchor: SupplierProduct, customQuery?: string): WholesaleSearchResult {
+function buildWholesaleResult(
+  product: MyProduct,
+  anchor: SupplierProduct,
+  customQuery?: string,
+  liveByPlatform: Partial<Record<WholesalePlatformCode, WholesaleListing[]>> = {},
+  meta?: { source: WholesaleSearchResult['source']; sourceNote?: string },
+): WholesaleSearchResult {
   const entity = createProductEntity(anchor.listing)
   const query =
     customQuery?.trim() ||
     buildSearchQuery(entity.dna.model.normalized, entity.dna.quantity.normalized)
 
-  const activePlatforms: WholesalePlatformCode[] = [product.platform]
   const anchorRow = anchorListingFromProduct(product)
-  const competitors = stubWholesaleCompetitors(product.platform)
-  const listings = [anchorRow, ...competitors]
+  const competitorListings = WHOLESALE_PLATFORMS.flatMap((platform) =>
+    competitorsForPlatform(platform, product, liveByPlatform),
+  )
+
+  const listings = [anchorRow, ...competitorListings]
 
   const rows = listings.map((listing) => ({
     listing,
@@ -112,20 +177,25 @@ function searchForProduct(product: MyProduct, anchor: SupplierProduct, customQue
         : null,
   }))
 
+  const hasLive = WHOLESALE_PLATFORMS.some((p) => (liveByPlatform[p]?.length ?? 0) > 0)
+  const hasStub = competitorListings.some((l) => l.id.startsWith('ws-ggook') || l.id.startsWith('ws-topia'))
+  const source = meta?.source ?? (hasLive && hasStub ? 'hybrid' : hasLive ? 'live' : 'stub')
+
   return {
     query,
     anchor,
     entity,
     rows,
     searchedAt: new Date().toISOString(),
-    stats: buildStats(rows, activePlatforms),
+    source,
+    sourceNote: meta?.sourceNote,
+    stats: buildStats(rows),
   }
 }
 
-/** 내 상품 → 해당 도매처만 경쟁 검색 (내가 판매 중인 도매처) */
-export function searchWholesaleCompetitorsForProduct(product: MyProduct, customQuery?: string): WholesaleSearchResult {
+function resolveAnchor(product: MyProduct): SupplierProduct {
   const stub = lookupDomemeProduct(product.itemCode)
-  const anchor = stub
+  return stub
     ? {
         ...stub,
         platform: product.platform,
@@ -137,10 +207,66 @@ export function searchWholesaleCompetitorsForProduct(product: MyProduct, customQ
         itemCode: product.itemCode,
       }
     : myProductToSupplier(product)
-  return searchForProduct(product, anchor, customQuery)
 }
 
-/** 도매매 상품번호 → DNA → 해당 도매처만 검색 (Adapter 전) */
+/** 동기 검색 — stub + 고정 카탈로그 (테스트·오프라인) */
+export function searchWholesaleCompetitorsForProduct(
+  product: MyProduct,
+  customQuery?: string,
+): WholesaleSearchResult {
+  const anchor = resolveAnchor(product)
+  return buildWholesaleResult(product, anchor, customQuery, {}, { source: 'stub' })
+}
+
+/** 도매 3플랫폼 실검색 (실패 플랫폼은 stub) */
+export async function searchWholesaleCompetitorsForProductLive(
+  product: MyProduct,
+  customQuery?: string,
+): Promise<WholesaleSearchResult> {
+  const anchor = resolveAnchor(product)
+  const entity = createProductEntity(anchor.listing)
+  const query =
+    customQuery?.trim() ||
+    buildSearchQuery(entity.dna.model.normalized, entity.dna.quantity.normalized)
+
+  const fallbacks = [query]
+  const modelOnly = buildSearchQuery(entity.dna.model.normalized, null)
+  if (modelOnly && !fallbacks.includes(modelOnly)) fallbacks.push(modelOnly)
+  if (product.model && !fallbacks.includes(product.model)) fallbacks.push(product.model)
+
+  let live = await fetchWholesaleSearch(fallbacks[0], 15, 'ALL')
+  let searchQueryUsed = fallbacks[0]
+  for (const next of fallbacks.slice(1)) {
+    if (live.ok && live.data.length > 0) break
+    const retry = await fetchWholesaleSearch(next, 15, 'ALL')
+    if (retry.ok && retry.data.length > 0) {
+      live = retry
+      searchQueryUsed = next
+    }
+  }
+
+  const liveByPlatform: Partial<Record<WholesalePlatformCode, WholesaleListing[]>> = {}
+  if (live.ok) {
+    for (const hit of live.data) {
+      const listing = listingFromSearchHit(hit)
+      const bucket = liveByPlatform[hit.platform] ?? []
+      bucket.push(listing)
+      liveByPlatform[hit.platform] = bucket
+    }
+  }
+
+  const liveCount = live.ok ? live.data.length : 0
+  const source: WholesaleSearchResult['source'] = liveCount > 0 ? 'hybrid' : 'stub'
+  const sourceNote = live.ok
+    ? liveCount > 0
+      ? `도매 3플랫폼 검색 · 「${searchQueryUsed}」 · ${live.total}건 후보`
+      : '실검색 결과 없음 — 도매꾹·도매토피아 예시 데이터를 표시합니다.'
+    : `${live.error} (예시 데이터)`
+
+  return buildWholesaleResult(product, anchor, customQuery, liveByPlatform, { source, sourceNote })
+}
+
+/** 도매매 상품번호 → DNA → 3플랫폼 검색 (stub) */
 export function searchWholesaleCompetitors(itemCode: string, customQuery?: string): WholesaleSearchResult | null {
   const anchor = lookupDomemeProduct(itemCode.trim())
   if (!anchor) return null
@@ -160,5 +286,5 @@ export function searchWholesaleCompetitors(itemCode: string, customQuery?: strin
     createdAt: anchor.capturedAt,
     updatedAt: anchor.capturedAt,
   }
-  return searchForProduct(product, anchor, customQuery)
+  return searchWholesaleCompetitorsForProduct(product, customQuery)
 }

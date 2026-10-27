@@ -74,12 +74,26 @@ export function parseDomeggookHtml(html: string, itemCode: string): DomeggookPar
   }
 }
 
+function encodingFromCharset(charset: string): string {
+  const c = charset.toLowerCase()
+  if (c === 'euc-kr' || c === 'cp949' || c === 'ks_c_5601-1987') return 'euc-kr'
+  if (c === 'utf8') return 'utf-8'
+  return c
+}
+
 export function decodeDomeggookBuffer(buffer: ArrayBuffer, contentType: string | null): string {
   const charset = /charset=([\w-]+)/i.exec(contentType ?? '')?.[1]?.toLowerCase() ?? 'euc-kr'
-  const encoding = charset === 'euc-kr' || charset === 'cp949' ? 'euc-kr' : charset
   try {
-    return new TextDecoder(encoding).decode(buffer)
+    return new TextDecoder(encodingFromCharset(charset)).decode(buffer)
   } catch {
     return new TextDecoder('utf-8').decode(buffer)
   }
+}
+
+/** 헤더 charset이 없으면 HTML meta charset을 본다 (도매꾹 UTF-8 / 도매매 EUC-KR 혼용) */
+export function decodeHtmlBuffer(buffer: ArrayBuffer, contentType: string | null): string {
+  const header = /charset=([\w-]+)/i.exec(contentType ?? '')?.[1]
+  const peek = new TextDecoder('utf-8', { fatal: false }).decode(buffer.slice(0, 1200))
+  const meta = /charset=["']?([\w-]+)/i.exec(peek)?.[1]
+  return decodeDomeggookBuffer(buffer, `text/html; charset=${header ?? meta ?? 'euc-kr'}`)
 }

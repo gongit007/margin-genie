@@ -1,6 +1,6 @@
 /** Product Intelligence — types */
 
-export const INTELLIGENCE_VERSION = '0.5.0'
+export const INTELLIGENCE_VERSION = '0.6.1'
 
 export type FieldStatus = 'KNOWN' | 'UNKNOWN' | 'NOT_VISIBLE'
 export type FieldSource = 'INPUT' | 'EXTRACTED' | 'NORMALIZED'
@@ -24,6 +24,17 @@ export type MatchStatus =
 export type ComparisonResult = 'EXACT' | 'SIMILAR' | 'DIFFERENT' | 'MISSING'
 
 export type WholesalePlatformCode = 'DOMAEMAE' | 'DOMEGGOOK' | 'DOMETOPIA'
+
+/** 도매 3플랫폼 검색 API 공통 행 */
+export type WholesaleSearchHit = {
+  platform: WholesalePlatformCode
+  itemCode: string
+  title: string
+  supplierName: string
+  wholesalePrice: number | null
+  shippingFee: number
+  listingUrl: string
+}
 
 export type MarketplaceCode =
   | 'NAVER_SMARTSTORE'
@@ -168,6 +179,8 @@ export type WholesaleSearchResult = {
   entity: ProductEntity
   rows: WholesaleCompetitionRow[]
   searchedAt: string
+  source: 'live' | 'stub' | 'hybrid'
+  sourceNote?: string
   stats: {
     total: number
     byPlatform: Record<WholesalePlatformCode, number>

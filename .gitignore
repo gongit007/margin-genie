@@ -3,6 +3,7 @@ dist
 dev-dist
 .DS_Store
 *.tsbuildinfo
+scripts/_*.html
 test-results
 playwright-report
 blob-report
@@ -10,3 +11,4 @@ playwright/.cache
 .env
 .env.local
 .env.*.local
+.vercel

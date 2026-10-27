@@ -6,12 +6,12 @@ import {
   MARKETPLACE_LABELS,
   RETAIL_FOCUS_MARKETPLACES,
   WHOLESALE_PLATFORM_LABELS,
+  WHOLESALE_PLATFORMS,
   loadMyProducts,
   matchStatusLabel,
-  myWholesalePlatforms,
   openMarginCalculator,
   searchRetailListingsForProduct,
-  searchWholesaleCompetitorsForProduct,
+  searchWholesaleCompetitorsForProductLive,
   retailCompetitorRows,
   retailMyListingRows,
   type MatchStatus,
@@ -19,10 +19,12 @@ import {
   type RetailCompetitionRow,
   type RetailSearchResult,
   type WholesaleCompetitionRow,
+  type WholesalePlatformCode,
   type WholesaleSearchResult,
 } from '../intelligence'
 
 type IntelTab = 'wholesale' | 'retail'
+type WholesalePlatformFilter = 'ALL' | WholesalePlatformCode
 
 function krw(n: number | null): string {
   if (n === null) return '—'
@@ -81,10 +83,12 @@ function WholesaleTable({
   rows,
   expandedId,
   onToggleEvidence,
+  onUsePrice,
 }: {
   rows: WholesaleCompetitionRow[]
   expandedId: string | null
   onToggleEvidence: (id: string) => void
+  onUsePrice: (listing: WholesaleCompetitionRow['listing']) => void
 }) {
   return (
     <TableScroll>
@@ -100,6 +104,7 @@ function WholesaleTable({
             <th className="py-2 pr-3 font-medium text-right">배송</th>
             <th className="py-2 pr-3 font-medium text-right">실효가</th>
             <th className="py-2 pr-3 font-medium">상세</th>
+            <th className="py-2 pr-3 font-medium">마진</th>
             <th className="py-2 font-medium">근거</th>
           </tr>
         </thead>
@@ -107,7 +112,11 @@ function WholesaleTable({
           {rows.map(({ listing, match }) => (
             <tr
               key={listing.id}
-              className={`border-b border-line/60 align-top ${listing.isAnchor ? 'bg-accent/10' : ''}`}
+              className={`border-b border-line/60 align-top ${listing.isAnchor ? 'bg-accent/10' : 'cursor-pointer hover:bg-accent/5'}`}
+              onClick={() => {
+                const cost = listing.wholesalePrice ?? listing.effectivePrice
+                if (cost != null) onUsePrice(listing)
+              }}
             >
               <td className="py-3 pr-3 font-medium whitespace-nowrap">
                 {WHOLESALE_PLATFORM_LABELS[listing.platform]}
@@ -131,6 +140,7 @@ function WholesaleTable({
                     href={listing.listingUrl}
                     target="_blank"
                     rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
                     className="text-xs font-medium text-accent underline underline-offset-2 whitespace-nowrap"
                   >
                     페이지 보기 ↗
@@ -139,7 +149,23 @@ function WholesaleTable({
                   '—'
                 )}
               </td>
-              <td className="py-3">
+              <td className="py-3 pr-3">
+                {(listing.wholesalePrice ?? listing.effectivePrice) != null ? (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onUsePrice(listing)
+                    }}
+                    className="text-xs font-medium text-ink underline underline-offset-2 whitespace-nowrap"
+                  >
+                    이 도매가로
+                  </button>
+                ) : (
+                  '—'
+                )}
+              </td>
+              <td className="py-3" onClick={(e) => e.stopPropagation()}>
                 <EvidenceCell
                   listingId={listing.id}
                   match={match}
@@ -240,18 +266,28 @@ export default function IntelligencePage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [retailQuery, setRetailQuery] = useState('')
   const [result, setResult] = useState<WholesaleSearchResult | null>(null)
+  const [wholesaleLoading, setWholesaleLoading] = useState(false)
+  const [wholesaleError, setWholesaleError] = useState<string | null>(null)
   const [retailResult, setRetailResult] = useState<RetailSearchResult | null>(null)
   const [retailLoading, setRetailLoading] = useState(false)
   const [retailError, setRetailError] = useState<string | null>(null)
+  const [wholesalePlatformFilter, setWholesalePlatformFilter] = useState<WholesalePlatformFilter>('ALL')
   const [marketFilter, setMarketFilter] = useState<'ALL' | (typeof RETAIL_FOCUS_MARKETPLACES)[number]>('ALL')
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
-  const myPlatforms = useMemo(() => myWholesalePlatforms(products), [products])
-
-  function analyzeWholesale(product: MyProduct, query?: string) {
-    const data = searchWholesaleCompetitorsForProduct(product, query)
-    setResult(data)
-    if (!query) setSearchQuery(data.query)
+  async function analyzeWholesale(product: MyProduct, query?: string) {
+    setWholesaleLoading(true)
+    setWholesaleError(null)
+    try {
+      const data = await searchWholesaleCompetitorsForProductLive(product, query)
+      setResult(data)
+      if (!query) setSearchQuery(data.query)
+      if (data.sourceNote && data.source === 'stub') setWholesaleError(data.sourceNote)
+    } catch {
+      setWholesaleError('도매 경쟁 검색 중 오류가 발생했습니다.')
+    } finally {
+      setWholesaleLoading(false)
+    }
   }
 
   async function analyzeRetail(product: MyProduct, query?: string) {
@@ -273,7 +309,8 @@ export default function IntelligencePage() {
     setSelected(product)
     setExpandedId(null)
     setMarketFilter('ALL')
-    analyzeWholesale(product)
+    setWholesalePlatformFilter('ALL')
+    void analyzeWholesale(product)
     void analyzeRetail(product)
   }
 
@@ -283,9 +320,10 @@ export default function IntelligencePage() {
   }, [])
 
   const filteredWholesaleRows = useMemo(() => {
-    if (!result || !selected) return []
-    return result.rows.filter((r) => r.listing.platform === selected.platform)
-  }, [result, selected])
+    if (!result) return []
+    if (wholesalePlatformFilter === 'ALL') return result.rows
+    return result.rows.filter((r) => r.listing.platform === wholesalePlatformFilter)
+  }, [result, wholesalePlatformFilter])
 
   const filteredRetailCompetitors = useMemo(() => {
     if (!retailResult) return []
@@ -302,13 +340,20 @@ export default function IntelligencePage() {
   const competitiveMin = result?.stats.lowestEffective ?? null
   const retailCompetitiveMin = retailResult?.stats.lowestEffective ?? null
 
-  function openMarginWithWholesaleCost(productCost: number, listPrice?: number, channel?: Parameters<typeof openMarginCalculator>[0]['channel']) {
+  function openMarginWithWholesaleCost(
+    productCost: number,
+    listPrice?: number,
+    channel?: Parameters<typeof openMarginCalculator>[0]['channel'],
+    shippingCost?: number,
+    productName?: string,
+  ) {
     if (!selected) return
     openMarginCalculator({
       productCost,
-      productName: selected.title,
+      productName: productName ?? selected.title,
       listPrice: listPrice ?? 11880,
       channel: channel ?? 'NAVER_SMARTSTORE',
+      shippingCost: shippingCost ?? selected.shippingFee,
     })
   }
 
@@ -316,7 +361,7 @@ export default function IntelligencePage() {
     setTab(next)
     setExpandedId(null)
     if (!selected) return
-    if (next === 'wholesale' && !result) analyzeWholesale(selected)
+    if (next === 'wholesale' && !result && !wholesaleLoading) void analyzeWholesale(selected)
     if (next === 'retail' && !retailResult && !retailLoading) void analyzeRetail(selected)
   }
 
@@ -416,10 +461,9 @@ export default function IntelligencePage() {
                 <section className="panel-shell p-5 sm:p-6">
                   <h2 className="panel-title">도매 경쟁 셀러 검색</h2>
                   <p className="mt-1 text-sm text-muted">
-                    {selected
-                      ? `${WHOLESALE_PLATFORM_LABELS[selected.platform]}에서 판매 중인 내 상품 기준으로 같은 Listing을 DNA 매칭합니다.`
-                      : '내 상품이 등록된 도매처만 비교합니다.'}
+                    도매매·도매꾹·도매토피아에서 같은 Listing을 DNA 매칭합니다. 행을 클릭하면 그 도매가로 마진 계산기를 엽니다.
                   </p>
+                  {wholesaleError && <p className="mt-2 text-sm text-amber-800">{wholesaleError}</p>}
                   <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-end">
                     <label className="flex-1">
                       <span className="text-sm font-medium">검색어</span>
@@ -431,10 +475,11 @@ export default function IntelligencePage() {
                     </label>
                     <button
                       type="button"
-                      onClick={() => analyzeWholesale(selected, searchQuery)}
-                      className="rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-ink shrink-0"
+                      onClick={() => void analyzeWholesale(selected, searchQuery)}
+                      disabled={wholesaleLoading}
+                      className="rounded-full bg-accent px-5 py-2.5 text-sm font-semibold text-ink shrink-0 disabled:opacity-50"
                     >
-                      다시 검색
+                      {wholesaleLoading ? '검색 중…' : '다시 검색'}
                     </button>
                   </div>
                 </section>
@@ -445,8 +490,17 @@ export default function IntelligencePage() {
                       <div>
                         <h2 className="panel-title">도매 경쟁가 비교</h2>
                         <p className="mt-1 text-sm text-muted">
-                          {WHOLESALE_PLATFORM_LABELS[selected.platform]} · 「{result.query}」 · 후보{' '}
-                          {result.stats.total}건 · 동일 {result.stats.exactMatch}건
+                          {result.source === 'live' || result.source === 'hybrid' ? (
+                            <span className="mr-2 inline-flex rounded-full bg-emerald-100 px-2 py-0.5 text-2xs font-medium text-emerald-800">
+                              실검색
+                            </span>
+                          ) : (
+                            <span className="mr-2 inline-flex rounded-full bg-neutral-200 px-2 py-0.5 text-2xs font-medium text-neutral-700">
+                              예시 데이터
+                            </span>
+                          )}
+                          3개 도매처 · 「{result.query}」 · 후보 {result.stats.total}건 · 동일{' '}
+                          {result.stats.exactMatch}건
                           {competitiveMin != null && (
                             <>
                               {' '}
@@ -455,12 +509,33 @@ export default function IntelligencePage() {
                           )}
                         </p>
                       </div>
-                      {myPlatforms.length > 1 && (
-                        <p className="text-xs text-muted">
-                          등록 도매처:{' '}
-                          {myPlatforms.map((p) => WHOLESALE_PLATFORM_LABELS[p]).join(' · ')}
-                        </p>
-                      )}
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setWholesalePlatformFilter('ALL')}
+                          className={`rounded-full px-3 py-1 text-xs font-medium border ${
+                            wholesalePlatformFilter === 'ALL'
+                              ? 'border-ink bg-ink text-paper'
+                              : 'border-line text-muted'
+                          }`}
+                        >
+                          전체
+                        </button>
+                        {WHOLESALE_PLATFORMS.map((p) => (
+                          <button
+                            key={p}
+                            type="button"
+                            onClick={() => setWholesalePlatformFilter(p)}
+                            className={`rounded-full px-3 py-1 text-xs font-medium border ${
+                              wholesalePlatformFilter === p
+                                ? 'border-ink bg-ink text-paper'
+                                : 'border-line text-muted'
+                            }`}
+                          >
+                            {WHOLESALE_PLATFORM_LABELS[p]} ({result.stats.byPlatform[p]})
+                          </button>
+                        ))}
+                      </div>
                     </div>
 
                     <div className="mt-4">
@@ -469,11 +544,20 @@ export default function IntelligencePage() {
                           rows={filteredWholesaleRows}
                           expandedId={expandedId}
                           onToggleEvidence={(id) => setExpandedId(expandedId === id ? null : id)}
+                          onUsePrice={(listing) => {
+                            const cost = listing.wholesalePrice ?? listing.effectivePrice
+                            if (cost == null) return
+                            openMarginWithWholesaleCost(
+                              listing.wholesalePrice ?? cost,
+                              undefined,
+                              undefined,
+                              listing.shippingFee ?? 0,
+                              listing.title ?? selected.title,
+                            )
+                          }}
                         />
                       ) : (
-                        <p className="text-sm text-muted py-6 text-center">
-                          {WHOLESALE_PLATFORM_LABELS[selected.platform]}에 등록된 내 상품이 없습니다.
-                        </p>
+                        <p className="text-sm text-muted py-6 text-center">표시할 도매 경쟁 행이 없습니다.</p>
                       )}
                     </div>
 
@@ -486,7 +570,7 @@ export default function IntelligencePage() {
                       >
                         {competitiveMin != null
                           ? '경쟁 최저 도매가로 마진 보기'
-                          : `${WHOLESALE_PLATFORM_LABELS[selected.platform]} 경쟁 셀러 없음`}
+                          : '경쟁 최저 도매가 없음'}
                       </button>
                       <button
                         type="button"
