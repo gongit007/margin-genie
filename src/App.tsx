@@ -401,6 +401,10 @@ export default function App() {
           <a href="/sitemap.xml" className="underline underline-offset-2">
             sitemap
           </a>
+          {' · '}
+          <a href="/intelligence" className="underline underline-offset-2">
+            Intelligence
+          </a>
         </p>
       </footer>
     </div>
